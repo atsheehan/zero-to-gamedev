@@ -18,17 +18,37 @@ const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 struct Grid {
     height: u32,
     width: u32,
+    cells: Vec<bool>,
 }
 
 impl Grid {
+    fn new(height: u32, width: u32) -> Self {
+        let cell_count = height * width;
+        let mut cells = vec![false; cell_count as usize];
+
+        cells[3] = true;
+        cells[4] = true;
+        cells[5] = true;
+        cells[14] = true;
+
+        Self { height, width, cells }
+    }
+
     fn render(&self, canvas: &mut WindowCanvas) {
         for col in 0..self.width {
             for row in 0..self.height {
+                let index = (row * self.width) + col;
+                let color = if self.cells[index as usize] {
+                    Color::RGB(255, 255, 255)
+                } else {
+                    Color::RGB(0, 0, 0)
+                };
+
                 // determine cell size
                 let x = col * CELL_SIZE;
                 let y = row * CELL_SIZE;
 
-                canvas.set_draw_color(Color::RGB(0, 0, 0));
+                canvas.set_draw_color(color);
                 canvas
                     .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
                     .expect("failed rect draw");
@@ -57,10 +77,7 @@ pub fn main() {
     let mut previous_instant = Instant::now();
 
     // Grids
-    let grid = Grid {
-        height: 20,
-        width: 10,
-    };
+    let grid = Grid::new(20, 10);
 
     'running: loop {
         for event in event_pump.poll_iter() {
