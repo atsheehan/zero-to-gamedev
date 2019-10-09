@@ -1,4 +1,7 @@
+#[macro_use]
+extern crate log;
 extern crate sdl2;
+extern crate simplelog;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -6,6 +9,8 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 use std::time::{Duration, Instant};
+
+mod util;
 
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
@@ -154,6 +159,7 @@ impl Grid {
 }
 
 pub fn main() {
+    util::init_logging();
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
@@ -165,7 +171,7 @@ pub fn main() {
         .build()
         .unwrap();
 
-    let mut canvas = window.into_canvas().build().unwrap();
+    let mut canvas = window.into_canvas().present_vsync().build().unwrap();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
 
@@ -174,6 +180,10 @@ pub fn main() {
 
     // Grids
     let mut grid = Grid::new(20, 10);
+
+    let mut fps = 0;
+    let mut ups = 0;
+    let mut fps_timer = Instant::now();
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -214,6 +224,7 @@ pub fn main() {
         while current_instant - previous_instant >= tick_duration {
             // Update world here
             previous_instant += tick_duration;
+            ups += 1;
         }
 
         canvas.set_draw_color(Color::RGB(75, 75, 75));
@@ -221,6 +232,14 @@ pub fn main() {
 
         // Render world here
         grid.render(&mut canvas);
+        fps += 1;
+
+        if fps_timer.elapsed().as_millis() >= 1000 {
+            debug!("fps {} ups {}", fps, ups);
+            fps = 0;
+            ups = 0;
+            fps_timer = Instant::now();
+        }
 
         canvas.present();
     }
