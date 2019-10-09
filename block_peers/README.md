@@ -17,7 +17,7 @@ This deliverable defines the basic mechanics of controlling the active piece and
 
 ### Story Breakdown
 
-* [ ] Display a grid that is 20 cells high and 10 cells wide.
+* [x] Display a grid that is 20 cells high and 10 cells wide.
 * [ ] Display a T-shaped piece at the top of the grid.
 * [ ] The player can move the piece left, right, or down 1 cell with the A, D, and S keys, respectively. The piece cannot move past the grid wall.
 * [ ] When the active piece collides with the bottom of the grid, it attaches to the grid (i.e. the player can no longer control it).
