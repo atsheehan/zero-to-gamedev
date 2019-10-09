@@ -19,22 +19,97 @@ struct Grid {
     height: u32,
     width: u32,
     cells: Vec<bool>,
+    current_piece: Vec<bool>,
+    current_piece_origin: (i32, i32),
 }
 
 impl Grid {
     fn new(height: u32, width: u32) -> Self {
         let cell_count = height * width;
-        let mut cells = vec![false; cell_count as usize];
+        let cells = vec![false; cell_count as usize];
 
-        cells[3] = true;
-        cells[4] = true;
-        cells[5] = true;
-        cells[14] = true;
+        let mut current_piece = vec![false; 16];
+        let current_piece_origin = (2, 0);
 
-        Self { height, width, cells }
+        current_piece[1] = true;
+        current_piece[2] = true;
+        current_piece[3] = true;
+        current_piece[6] = true;
+
+        Self {
+            height,
+            width,
+            cells,
+            current_piece,
+            current_piece_origin,
+        }
+    }
+
+    fn move_piece_left(&mut self) {
+        let (x_offset, _) = self.current_piece_origin;
+        let x_offset = x_offset - 1;
+
+        for col in 0..4 {
+            for row in 0..4 {
+                let index = (row * 4) + col;
+
+                // brick is occupied
+                if self.current_piece[index] {
+                    let x = col as i32 + x_offset;
+                    if x < 0 || x >= self.width as i32 {
+                        return;
+                    }
+                }
+            }
+        }
+
+        self.current_piece_origin.0 -= 1;
+    }
+
+    fn move_piece_right(&mut self) {
+        let (x_offset, _) = self.current_piece_origin;
+        let x_offset = x_offset + 1;
+
+        for col in 0..4 {
+            for row in 0..4 {
+                let index = (row * 4) + col;
+
+                // brick is occupied
+                if self.current_piece[index] {
+                    let x = col as i32 + x_offset;
+                    if x < 0 || x >= self.width as i32 {
+                        return;
+                    }
+                }
+            }
+        }
+
+        self.current_piece_origin.0 += 1;
+    }
+
+    fn move_piece_down(&mut self) {
+        let (_, y_offset) = self.current_piece_origin;
+        let y_offset = y_offset + 1;
+
+        for col in 0..4 {
+            for row in 0..4 {
+                let index = (row * 4) + col;
+
+                // brick is occupied
+                if self.current_piece[index] {
+                    let y = row as i32 + y_offset;
+                    if y >= self.height as i32 {
+                        return;
+                    }
+                }
+            }
+        }
+
+        self.current_piece_origin.1 += 1;
     }
 
     fn render(&self, canvas: &mut WindowCanvas) {
+        // Render board
         for col in 0..self.width {
             for row in 0..self.height {
                 let index = (row * self.width) + col;
@@ -52,6 +127,27 @@ impl Grid {
                 canvas
                     .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
                     .expect("failed rect draw");
+            }
+        }
+
+        // Render current piece
+        for col in 0..4 {
+            for row in 0..4 {
+                let index = (row * 4) + col;
+
+                if self.current_piece[index as usize] {
+                    let color = Color::RGB(255, 255, 255);
+
+                    // determine cell size
+                    let (x_offset, y_offset) = self.current_piece_origin;
+                    let x = (col + x_offset) * CELL_SIZE as i32;
+                    let y = (row + y_offset) * CELL_SIZE as i32;
+
+                    canvas.set_draw_color(color);
+                    canvas
+                        .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
+                        .expect("failed rect draw");
+                }
             }
         }
     }
@@ -77,7 +173,7 @@ pub fn main() {
     let mut previous_instant = Instant::now();
 
     // Grids
-    let grid = Grid::new(20, 10);
+    let mut grid = Grid::new(20, 10);
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -92,6 +188,24 @@ pub fn main() {
                     ..
                 } => break 'running,
                 // Handle other input here
+                Event::KeyDown {
+                    keycode: Some(Keycode::A),
+                    ..
+                } => {
+                    grid.move_piece_left();
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::D),
+                    ..
+                } => {
+                    grid.move_piece_right();
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::S),
+                    ..
+                } => {
+                    grid.move_piece_down();
+                }
                 _ => {}
             }
         }
