@@ -1,4 +1,4 @@
-use simplelog::*;
+use simplelog::{Config, LevelFilter, SimpleLogger};
 
 const DEFAULT_LOG_LEVEL: LevelFilter = LevelFilter::Debug;
 
