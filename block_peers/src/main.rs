@@ -99,6 +99,7 @@ impl Grid {
             cells,
             current_piece,
             current_piece_origin,
+            drop_counter: 0,
         }
     }
 
@@ -145,6 +146,8 @@ impl Grid {
     }
 
     fn move_piece_down(&mut self) -> bool {
+        self.drop_counter = 0;
+
         let (x_offset, y_offset) = self.current_piece_origin;
         let y_offset = y_offset + 1;
 
@@ -234,9 +237,8 @@ impl Grid {
     fn update(&mut self) {
         self.drop_counter += 1;
 
-        if self.drop_counter >= 120 {
+        if self.drop_counter >= 100 {
             self.move_piece_down();
-            self.drop_counter = 0;
         }
     }
 }
