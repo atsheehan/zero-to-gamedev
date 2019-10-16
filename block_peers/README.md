@@ -22,8 +22,8 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * [x] The player can move the piece left, right, or down 1 cell with the A, D, and S keys, respectively. The piece cannot move past the grid wall.
 * [x] When the active piece collides with the bottom of the grid, it attaches to the grid (i.e. the player can no longer control it).
 * [x] After attaching to the grid, a new T-shaped piece is generated at the top of the grid.
-* [ ] When the active piece collides with an occupied cell on the grid, it attaches to the grid.
-* [ ] The player can drop the piece to the bottom of the grid by pressing W.
+* [x] When the active piece collides with an occupied cell on the grid, it attaches to the grid.
+* [x] The player can drop the piece to the bottom of the grid by pressing W.
 * [ ] If the player has not moved the active piece down within 2 seconds, the piece automatically moves down one cell. If it collides with the floor or an occupied cell, it is attached to the grid.
 * [ ] The player can rotate the piece clockwise 90 degrees by pressing E.
 * [ ] After a piece of attached to the grid, any full lines are cleared out and bricks above the line are dropped down.

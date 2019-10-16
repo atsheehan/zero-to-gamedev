@@ -48,7 +48,8 @@ impl Iterator for BrickIterator {
     fn next(&mut self) -> Option<Self::Item> {
         while self.current_row < self.num_rows as i32 {
             while self.current_col < self.num_columns as i32 {
-                let index = ((self.current_row * self.num_columns as i32) + self.current_col) as usize;
+                let index =
+                    ((self.current_row * self.num_columns as i32) + self.current_col) as usize;
 
                 if self.cells[index] {
                     let (col_offset, row_offset) = self.origin;
@@ -56,8 +57,8 @@ impl Iterator for BrickIterator {
                     let row = self.current_row + row_offset;
 
                     self.current_col += 1;
-                    return Some((col, row))
-                 } else {
+                    return Some((col, row));
+                } else {
                     self.current_col += 1;
                 }
             }
@@ -76,6 +77,7 @@ struct Grid {
     cells: Vec<bool>,
     current_piece: Vec<bool>,
     current_piece_origin: (i32, i32),
+    drop_counter: u32,
 }
 
 impl Grid {
@@ -142,7 +144,7 @@ impl Grid {
         self.current_piece_origin.0 += 1;
     }
 
-    fn move_piece_down(&mut self) {
+    fn move_piece_down(&mut self) -> bool {
         let (x_offset, y_offset) = self.current_piece_origin;
         let y_offset = y_offset + 1;
 
@@ -151,9 +153,15 @@ impl Grid {
         if self.is_colliding(next_piece_origin) {
             self.attach_piece_to_grid();
             self.current_piece_origin = (2, 0);
+            true
         } else {
             self.current_piece_origin = next_piece_origin;
+            false
         }
+    }
+
+    fn move_piece_to_bottom(&mut self) {
+        while !self.move_piece_down() {}
     }
 
     fn piece_iterator(&self, origin: (i32, i32)) -> BrickIterator {
@@ -222,6 +230,15 @@ impl Grid {
             }
         }
     }
+
+    fn update(&mut self) {
+        self.drop_counter += 1;
+
+        if self.drop_counter >= 120 {
+            self.move_piece_down();
+            self.drop_counter = 0;
+        }
+    }
 }
 
 pub fn main() {
@@ -247,6 +264,7 @@ pub fn main() {
     // Grids
     let mut grid = Grid::new(20, 10);
 
+    // Debug
     let mut fps = 0;
     let mut ups = 0;
     let mut fps_timer = Instant::now();
@@ -282,13 +300,19 @@ pub fn main() {
                 } => {
                     grid.move_piece_down();
                 }
+                Event::KeyDown {
+                    keycode: Some(Keycode::W),
+                    ..
+                } => {
+                    grid.move_piece_to_bottom();
+                }
                 _ => {}
             }
         }
 
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            // Update world here
+            grid.update();
             previous_instant += tick_duration;
             ups += 1;
         }
