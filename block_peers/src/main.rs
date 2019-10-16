@@ -187,7 +187,7 @@ impl Grid {
 }
 
 pub fn main() {
-    // Subsystems
+    // Subsystems Init
     util::init_logging();
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -201,6 +201,8 @@ pub fn main() {
         .build()
         .unwrap();
     let mut canvas = window.into_canvas().present_vsync().build().unwrap();
+
+    // Input
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     // Timing

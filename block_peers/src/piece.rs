@@ -30,7 +30,7 @@ pub const PIECES: [Piece; 7] = [
     ],
     [
         false, false, false, false,
-        true,  true,  false,  false,
+        true,  true,  false, false,
         false, true,  true,  false,
         false, false, false, false
     ],
@@ -83,12 +83,6 @@ pub fn rotated_index(px: usize, py: usize, rotation: Rotation) -> usize {
         OneEighty => 15 - (py * 4) - px,
         TwoSeventy => 3 - py + (px * 4),
     }
-}
-
-
-#[test]
-fn test_rotation_index() {
-    println!("TODO");
 }
 
 #[test]
