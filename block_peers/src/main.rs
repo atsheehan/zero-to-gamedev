@@ -20,6 +20,56 @@ const TICKS_PER_SECOND: u64 = 60;
 const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
 const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 
+struct BrickIterator {
+    origin: (i32, i32),
+    num_columns: u32,
+    num_rows: u32,
+    current_col: i32,
+    current_row: i32,
+    cells: Vec<bool>,
+}
+
+impl BrickIterator {
+    fn new(origin: (i32, i32), num_columns: u32, num_rows: u32, cells: Vec<bool>) -> Self {
+        BrickIterator {
+            origin,
+            num_columns,
+            num_rows,
+            current_col: 0,
+            current_row: 0,
+            cells,
+        }
+    }
+}
+
+impl Iterator for BrickIterator {
+    type Item = (i32, i32);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.current_row < self.num_rows as i32 {
+            while self.current_col < self.num_columns as i32 {
+                let index = ((self.current_row * self.num_columns as i32) + self.current_col) as usize;
+
+                if self.cells[index] {
+                    let (col_offset, row_offset) = self.origin;
+                    let col = self.current_col + col_offset;
+                    let row = self.current_row + row_offset;
+
+                    self.current_col += 1;
+                    return Some((col, row))
+                 } else {
+                    self.current_col += 1;
+                }
+            }
+
+            self.current_row += 1;
+            self.current_col = 0;
+        }
+
+        None
+    }
+}
+
 struct Grid {
     height: u32,
     width: u32,
@@ -104,67 +154,28 @@ impl Grid {
         } else {
             self.current_piece_origin = next_piece_origin;
         }
+    }
 
-        // for col in 0..4 {
-        // for row in 0..4 {
-        // let index = (row * 4) + col;
-
-        // // brick is occupied
-        // if self.current_piece[index] {
-        // let y = row as i32 + y_offset;
-
-        // if y >= self.height as i32 // check for other pieces {
-        // collision, attach to grid
-        // }
-        // }
-        // }
-        // }
+    fn piece_iterator(&self, origin: (i32, i32)) -> BrickIterator {
+        BrickIterator::new(origin, 4, 4, self.current_piece.clone())
     }
 
     fn is_colliding(&self, piece_origin: (i32, i32)) -> bool {
-        let (piece_col_offset, piece_row_offset) = piece_origin;
+        for (col, row) in self.piece_iterator(piece_origin) {
+            let grid_index = ((row * self.width as i32) + col) as usize;
 
-        for piece_col in 0..4 {
-            for piece_row in 0..4 {
-                let piece_index = ((piece_row * 4) + piece_col) as usize;
-
-                if self.current_piece[piece_index] {
-                    let y = piece_row as i32 + piece_row_offset;
-
-                    if y >= self.height as i32 {
-                        return true;
-                    }
-
-                    let grid_col = piece_col + piece_col_offset;
-                    let grid_row = piece_row + piece_row_offset;
-                    let grid_index = ((grid_row * self.width as i32) + grid_col) as usize;
-
-                    if self.cells[grid_index] {
-                        return true;
-                    }
-                }
+            if row >= self.height as i32 || self.cells[grid_index] {
+                return true;
             }
         }
+
         false
     }
 
     fn attach_piece_to_grid(&mut self) {
-        let (piece_col_offset, piece_row_offset) = self.current_piece_origin;
-
-        for piece_col in 0..4 {
-            for piece_row in 0..4 {
-                let piece_index = ((piece_row * 4) + piece_col) as usize;
-
-                // brick is occupied
-                if self.current_piece[piece_index] {
-                    // copy this cell onto the grid
-                    let grid_col = piece_col + piece_col_offset;
-                    let grid_row = piece_row + piece_row_offset;
-
-                    let grid_index = ((grid_row * self.width as i32) + grid_col) as usize;
-                    self.cells[grid_index] = true;
-                }
-            }
+        for (col, row) in self.piece_iterator(self.current_piece_origin) {
+            let index = ((row * self.width as i32) + col) as usize;
+            self.cells[index] = true;
         }
     }
 
