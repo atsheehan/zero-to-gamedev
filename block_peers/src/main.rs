@@ -20,9 +20,7 @@ use std::time::{Duration, Instant};
 use brick::BrickIterator;
 use piece::{random_next_piece, rotated_index, Piece, Rotation};
 
-// ---------
 // Constants
-// ---------
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 const CELL_SIZE: u32 = 20;
@@ -66,63 +64,37 @@ impl Grid {
     }
 
     fn move_piece_left(&mut self) {
-        let (x_offset, _) = self.current_piece_origin;
-        let x_offset = x_offset - 1;
+        let mut next = self.current_piece_origin.clone();
+        next.0 -= 1;
 
-        for col in 0..4 {
-            for row in 0..4 {
-                let index = (row * 4) + col;
-
-                // brick is occupied
-                if self.current_piece[index] {
-                    let x = col as i32 + x_offset;
-                    if x < 0 || x >= self.width as i32 {
-                        return;
-                    }
-                }
-            }
+        if self.does_piece_fit(self.current_piece.to_vec(), self.rotation.clone(), next) {
+            self.current_piece_origin.0 -= 1;
         }
-
-        self.current_piece_origin.0 -= 1;
     }
 
     fn move_piece_right(&mut self) {
-        let (x_offset, _) = self.current_piece_origin;
-        let x_offset = x_offset + 1;
+        let mut next = self.current_piece_origin.clone();
+        next.0 += 1;
 
-        for col in 0..4 {
-            for row in 0..4 {
-                let index = (row * 4) + col;
-
-                // brick is occupied
-                if self.current_piece[index] {
-                    let x = col as i32 + x_offset;
-                    if x < 0 || x >= self.width as i32 {
-                        return;
-                    }
-                }
-            }
+        if self.does_piece_fit(self.current_piece.to_vec(), self.rotation.clone(), next) {
+            self.current_piece_origin.0 += 1;
         }
-
-        self.current_piece_origin.0 += 1;
     }
 
     fn move_piece_down(&mut self) -> bool {
         self.drop_counter = 0;
 
-        let (x_offset, y_offset) = self.current_piece_origin;
-        let y_offset = y_offset + 1;
+        let mut next = self.current_piece_origin.clone();
+        next.1 += 1;
 
-        let next_piece_origin = (x_offset, y_offset);
-
-        if self.is_colliding(next_piece_origin) {
+        if self.does_piece_fit(self.current_piece.to_vec(), self.rotation.clone(), next) {
+            self.current_piece_origin.1 += 1;
+            false
+        } else {
             self.attach_piece_to_grid();
             self.current_piece = random_next_piece();
             self.current_piece_origin = (2, 0);
             true
-        } else {
-            self.current_piece_origin = next_piece_origin;
-            false
         }
     }
 
@@ -130,20 +102,28 @@ impl Grid {
         while !self.move_piece_down() {}
     }
 
-    fn piece_iterator(&self, origin: (i32, i32)) -> BrickIterator {
-        BrickIterator::new(origin, 4, 4, self.current_piece.to_vec().clone())
-    }
+    fn does_piece_fit(&self, piece: Vec<bool>, rotation: Rotation, origin: (i32, i32)) -> bool {
+        for x in 0..4 {
+            for y in 0..4 {
+                let index = rotated_index(x, y, rotation.clone());
+                let grid_index = (origin.1 + y as i32) * self.width as i32 + (origin.0 + x as i32);
 
-    fn is_colliding(&self, piece_origin: (i32, i32)) -> bool {
-        for (col, row) in self.piece_iterator(piece_origin) {
-            let grid_index = ((row * self.width as i32) + col) as usize;
-
-            if row >= self.height as i32 || self.cells[grid_index] {
-                return true;
+                // Bounds check
+                if origin.0 + x as i32 >= 0 && (origin.0 + x as i32) < (self.width as i32) {
+                    if origin.1 + y as i32 >= 0 && (origin.1 + y as i32) < (self.height as i32) {
+                        // Collision check
+                        if piece[index] && self.cells[grid_index as usize] {
+                            return false;
+                        }
+                    }
+                }
             }
         }
+        true
+    }
 
-        false
+    fn piece_iterator(&self, origin: (i32, i32)) -> BrickIterator {
+        BrickIterator::new(origin, 4, 4, self.current_piece.to_vec().clone())
     }
 
     fn attach_piece_to_grid(&mut self) {
@@ -274,7 +254,13 @@ pub fn main() {
                     keycode: Some(Keycode::E),
                     ..
                 } => {
-                    grid.rotation = grid.rotation.next();
+                    if grid.does_piece_fit(
+                        grid.current_piece.to_vec(),
+                        grid.rotation.next(),
+                        grid.current_piece_origin,
+                    ) {
+                        grid.rotation = grid.rotation.next();
+                    }
                 }
                 _ => {}
             }

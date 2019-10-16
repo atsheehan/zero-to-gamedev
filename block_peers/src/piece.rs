@@ -85,6 +85,7 @@ pub fn rotated_index(px: usize, py: usize, rotation: Rotation) -> usize {
     }
 }
 
+
 #[test]
 fn test_rotation_index() {
     println!("TODO");
