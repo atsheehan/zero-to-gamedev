@@ -104,6 +104,9 @@ impl Grid {
                 if self.current_piece[index] {
                     let y = row as i32 + y_offset;
                     if y >= self.height as i32 {
+                        // collision, attach to grid
+                        self.attach_piece_to_grid();
+                        self.current_piece_origin = (2, 0);
                         return;
                     }
                 }
@@ -111,6 +114,26 @@ impl Grid {
         }
 
         self.current_piece_origin.1 += 1;
+    }
+
+    fn attach_piece_to_grid(&mut self) {
+        let (piece_col_offset, piece_row_offset) = self.current_piece_origin;
+
+        for piece_col in 0..4 {
+            for piece_row in 0..4 {
+                let piece_index = ((piece_row * 4) + piece_col) as usize;
+
+                // brick is occupied
+                if self.current_piece[piece_index] {
+                    // copy this cell onto the grid
+                    let grid_col = piece_col + piece_col_offset;
+                    let grid_row = piece_row + piece_row_offset;
+
+                    let grid_index = ((grid_row * self.width as i32) + grid_col) as usize;
+                    self.cells[grid_index] = true;
+                }
+            }
+        }
     }
 
     fn render(&self, canvas: &mut WindowCanvas) {
