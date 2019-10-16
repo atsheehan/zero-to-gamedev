@@ -93,27 +93,59 @@ impl Grid {
     }
 
     fn move_piece_down(&mut self) {
-        let (_, y_offset) = self.current_piece_origin;
+        let (x_offset, y_offset) = self.current_piece_origin;
         let y_offset = y_offset + 1;
 
-        for col in 0..4 {
-            for row in 0..4 {
-                let index = (row * 4) + col;
+        let next_piece_origin = (x_offset, y_offset);
 
-                // brick is occupied
-                if self.current_piece[index] {
-                    let y = row as i32 + y_offset;
+        if self.is_colliding(next_piece_origin) {
+            self.attach_piece_to_grid();
+            self.current_piece_origin = (2, 0);
+        } else {
+            self.current_piece_origin = next_piece_origin;
+        }
+
+        // for col in 0..4 {
+        // for row in 0..4 {
+        // let index = (row * 4) + col;
+
+        // // brick is occupied
+        // if self.current_piece[index] {
+        // let y = row as i32 + y_offset;
+
+        // if y >= self.height as i32 // check for other pieces {
+        // collision, attach to grid
+        // }
+        // }
+        // }
+        // }
+    }
+
+    fn is_colliding(&self, piece_origin: (i32, i32)) -> bool {
+        let (piece_col_offset, piece_row_offset) = piece_origin;
+
+        for piece_col in 0..4 {
+            for piece_row in 0..4 {
+                let piece_index = ((piece_row * 4) + piece_col) as usize;
+
+                if self.current_piece[piece_index] {
+                    let y = piece_row as i32 + piece_row_offset;
+
                     if y >= self.height as i32 {
-                        // collision, attach to grid
-                        self.attach_piece_to_grid();
-                        self.current_piece_origin = (2, 0);
-                        return;
+                        return true;
+                    }
+
+                    let grid_col = piece_col + piece_col_offset;
+                    let grid_row = piece_row + piece_row_offset;
+                    let grid_index = ((grid_row * self.width as i32) + grid_col) as usize;
+
+                    if self.cells[grid_index] {
+                        return true;
                     }
                 }
             }
         }
-
-        self.current_piece_origin.1 += 1;
+        false
     }
 
     fn attach_piece_to_grid(&mut self) {
