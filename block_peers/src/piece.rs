@@ -241,36 +241,36 @@ fn test_piece_indexing() {
 
 #[test]
 fn test_piece_iterator() {
-    struct PieceTest {
+    struct PieceIterTest {
         piece: Piece,
         expected: Vec<GridCell>,
     }
-    let tests: Vec<PieceTest> = vec![
-        PieceTest {
+    let tests: Vec<PieceIterTest> = vec![
+        PieceIterTest {
             piece: Piece::new(0),
             expected: vec![(1, 0).into(), (2, 0).into(), (3, 0).into(), (2, 1).into()],
         },
-        PieceTest {
+        PieceIterTest {
             piece: Piece::new(1),
             expected: vec![(2, 0).into(), (2, 1).into(), (2, 2).into(), (2, 3).into()],
         },
-        PieceTest {
+        PieceIterTest {
             piece: Piece::new(2),
             expected: vec![(1, 1).into(), (2, 1).into(), (1, 2).into(), (2, 2).into()],
         },
-        PieceTest {
+        PieceIterTest {
             piece: Piece::new(3),
             expected: vec![(0, 1).into(), (1, 1).into(), (1, 2).into(), (2, 2).into()],
         },
-        PieceTest {
+        PieceIterTest {
             piece: Piece::new(4),
             expected: vec![(1, 0).into(), (1, 1).into(), (2, 1).into(), (2, 2).into()],
         },
-        PieceTest {
+        PieceIterTest {
             piece: Piece::new(5),
             expected: vec![(2, 0).into(), (2, 1).into(), (1, 2).into(), (2, 2).into()],
         },
-        PieceTest {
+        PieceIterTest {
             piece: Piece::new(6),
             expected: vec![(1, 0).into(), (1, 1).into(), (1, 2).into(), (2, 2).into()],
         },
