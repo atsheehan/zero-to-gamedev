@@ -17,7 +17,7 @@ use sdl2::render::WindowCanvas;
 use std::time::{Duration, Instant};
 
 // Internal
-use brick::BrickIterator;
+use brick::{BrickIterator, GridCell};
 use piece::{random_next_piece, rotated_index, Piece, Rotation};
 
 // Constants
@@ -33,7 +33,6 @@ struct Grid {
     width: u32,
     cells: Vec<bool>,
     current_piece: Piece,
-    current_piece_origin: (i32, i32),
     drop_counter: u32,
     rotation: Rotation,
 }
@@ -50,50 +49,52 @@ impl Grid {
                 cells[index] = x == 0 || x == width - 1 || y == height - 1;
             }
         }
-        let current_piece_origin = (2, 0);
+
+        // Move piece to right a bit to center it
+        let current_piece = random_next_piece().move_right().move_right();
 
         Self {
             height,
             width,
             cells,
-            current_piece: random_next_piece(),
-            current_piece_origin,
+            current_piece,
             drop_counter: 0,
             rotation: Rotation::Zero,
         }
     }
 
     fn move_piece_left(&mut self) {
-        let mut next = self.current_piece_origin.clone();
-        next.0 -= 1;
-
-        if self.does_piece_fit(self.current_piece.to_vec(), self.rotation.clone(), next) {
-            self.current_piece_origin.0 -= 1;
+        let next = self.current_piece.move_left();
+        if self.does_piece_fit(&next) {
+            self.current_piece = next;
         }
     }
 
     fn move_piece_right(&mut self) {
-        let mut next = self.current_piece_origin.clone();
-        next.0 += 1;
+        let next = self.current_piece.move_right();
+        if self.does_piece_fit(&next) {
+            self.current_piece = next;
+        }
+    }
 
-        if self.does_piece_fit(self.current_piece.to_vec(), self.rotation.clone(), next) {
-            self.current_piece_origin.0 += 1;
+    fn rotate(&mut self) {
+        let next = self.current_piece.rotate();
+        if self.does_piece_fit(&next) {
+            self.current_piece = next;
         }
     }
 
     fn move_piece_down(&mut self) -> bool {
+        // Always reset drop counter
         self.drop_counter = 0;
 
-        let mut next = self.current_piece_origin.clone();
-        next.1 += 1;
-
-        if self.does_piece_fit(self.current_piece.to_vec(), self.rotation.clone(), next) {
-            self.current_piece_origin.1 += 1;
+        let next = self.current_piece.move_down();
+        if self.does_piece_fit(&next) {
+            self.current_piece = next;
             false
         } else {
             self.attach_piece_to_grid();
             self.current_piece = random_next_piece();
-            self.current_piece_origin = (2, 0);
             true
         }
     }
@@ -102,6 +103,22 @@ impl Grid {
         while !self.move_piece_down() {}
     }
 
+    fn does_piece_fit(&self, piece: &Piece) -> bool {
+        for GridCell { row, col } in piece.piece_iter() {
+            let (x_offset, y_offset) = piece.origin();
+            let x = col + x_offset;
+            let y = row + y_offset;
+            let grid_index = y * self.width as i32 + x;
+
+            if self.cells[grid_index as usize] {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /*
     fn does_piece_fit(&self, piece: Vec<bool>, rotation: Rotation, origin: (i32, i32)) -> bool {
         for x in 0..4 {
             for y in 0..4 {
@@ -121,59 +138,64 @@ impl Grid {
         }
         true
     }
+    */
 
-    fn piece_iterator(&self, origin: (i32, i32)) -> BrickIterator {
-        BrickIterator::new(origin, 4, 4, self.current_piece.to_vec().clone())
+    fn grid_iterator(&self, only_occupied: bool) -> BrickIterator {
+        BrickIterator::new(
+            (0, 0),
+            self.width,
+            self.height,
+            self.cells.clone(),
+            only_occupied,
+        )
     }
 
     fn attach_piece_to_grid(&mut self) {
-        for (col, row) in self.piece_iterator(self.current_piece_origin) {
-            let index = ((row * self.width as i32) + col) as usize;
-            self.cells[index] = true;
+        for GridCell { row, col } in self.current_piece.piece_iter() {
+            let (x_offset, y_offset) = self.current_piece.origin();
+            let x = col + x_offset;
+            let y = row + y_offset;
+            let grid_index = y * self.width as i32 + x;
+
+            self.cells[grid_index as usize] = true
         }
     }
 
     fn render(&self, canvas: &mut WindowCanvas) {
-        // Render board
-        for col in 0..self.width {
-            for row in 0..self.height {
-                let index = (row * self.width) + col;
-                let color = if self.cells[index as usize] {
-                    Color::RGB(255, 255, 255)
-                } else {
-                    Color::RGB(0, 0, 0)
-                };
+        // Render board background
+        for GridCell { col, row } in self.grid_iterator(false) {
+            let color = Color::RGB(0, 0, 0);
+            let x = col as u32 * CELL_SIZE;
+            let y = row as u32 * CELL_SIZE;
 
-                // determine cell size
-                let x = col * CELL_SIZE;
-                let y = row * CELL_SIZE;
-
-                canvas.set_draw_color(color);
-                canvas
-                    .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
-                    .expect("failed rect draw");
-            }
+            canvas.set_draw_color(color);
+            canvas
+                .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
+                .expect("failed rect draw");
         }
 
-        // Render current piece
-        for col in 0..4 {
-            for row in 0..4 {
-                let index = rotated_index(col, row, self.rotation.clone());
+        // Render occupied cells on the board
+        for GridCell { col, row } in self.grid_iterator(true) {
+            let color = Color::RGB(255, 255, 255);
+            let x = col as u32 * CELL_SIZE;
+            let y = row as u32 * CELL_SIZE;
 
-                if self.current_piece[index as usize] {
-                    let color = Color::RGB(255, 255, 255);
+            canvas.set_draw_color(color);
+            canvas
+                .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
+                .expect("failed rect draw");
+        }
 
-                    // determine cell size
-                    let (x_offset, y_offset) = self.current_piece_origin;
-                    let x = (col as i32 + x_offset) * CELL_SIZE as i32;
-                    let y = (row as i32 + y_offset) * CELL_SIZE as i32;
-
-                    canvas.set_draw_color(color);
-                    canvas
-                        .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
-                        .expect("failed rect draw");
-                }
-            }
+        // Render current piece new
+        let piece_color = Color::RGB(255, 255, 255);
+        for GridCell { col, row } in self.current_piece.piece_iter() {
+            let (x_offset, y_offset) = self.current_piece.origin();
+            let x = (col + x_offset) * CELL_SIZE as i32;
+            let y = (row + y_offset) * CELL_SIZE as i32;
+            canvas.set_draw_color(piece_color);
+            canvas
+                .fill_rect(Rect::new(x, y, CELL_SIZE, CELL_SIZE))
+                .expect("failed rect draw");
         }
     }
 
@@ -256,13 +278,7 @@ pub fn main() {
                     keycode: Some(Keycode::E),
                     ..
                 } => {
-                    if grid.does_piece_fit(
-                        grid.current_piece.to_vec(),
-                        grid.rotation.next(),
-                        grid.current_piece_origin,
-                    ) {
-                        grid.rotation = grid.rotation.next();
-                    }
+                    grid.rotate();
                 }
                 _ => {}
             }
