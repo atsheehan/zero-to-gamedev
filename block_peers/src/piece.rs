@@ -241,11 +241,46 @@ fn test_piece_indexing() {
 
 #[test]
 fn test_piece_iterator() {
-    let piece = Piece::new(0);
-    let expected: Vec<GridCell> = vec![(1, 0).into(), (2, 0).into(), (3, 0).into(), (2, 1).into()];
-    let mut result: Vec<GridCell> = vec![];
-    for cell in piece.local_iter() {
-        result.push(cell);
+    struct PieceTest {
+        piece: Piece,
+        expected: Vec<GridCell>,
     }
-    assert_eq!(expected, result);
+    let tests: Vec<PieceTest> = vec![
+        PieceTest {
+            piece: Piece::new(0),
+            expected: vec![(1, 0).into(), (2, 0).into(), (3, 0).into(), (2, 1).into()],
+        },
+        PieceTest {
+            piece: Piece::new(1),
+            expected: vec![(2, 0).into(), (2, 1).into(), (2, 2).into(), (2, 3).into()],
+        },
+        PieceTest {
+            piece: Piece::new(2),
+            expected: vec![(1, 1).into(), (2, 1).into(), (1, 2).into(), (2, 2).into()],
+        },
+        PieceTest {
+            piece: Piece::new(3),
+            expected: vec![(0, 1).into(), (1, 1).into(), (1, 2).into(), (2, 2).into()],
+        },
+        PieceTest {
+            piece: Piece::new(4),
+            expected: vec![(1, 0).into(), (1, 1).into(), (2, 1).into(), (2, 2).into()],
+        },
+        PieceTest {
+            piece: Piece::new(5),
+            expected: vec![(2, 0).into(), (2, 1).into(), (1, 2).into(), (2, 2).into()],
+        },
+        PieceTest {
+            piece: Piece::new(6),
+            expected: vec![(1, 0).into(), (1, 1).into(), (1, 2).into(), (2, 2).into()],
+        },
+    ];
+
+    for tt in tests {
+        let mut result: Vec<GridCell> = vec![];
+        for cell in tt.piece.local_iter() {
+            result.push(cell);
+        }
+        assert_eq!(tt.expected, result);
+    }
 }
