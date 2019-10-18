@@ -27,6 +27,7 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * [x] If the player has not moved the active piece down within 2 seconds, the piece automatically moves down one cell. If it collides with the floor or an occupied cell, it is attached to the grid.
 * [x] The player can rotate the piece clockwise 90 degrees by pressing E.
 * [ ] Proper collision detection on rotated pieces
+* [ ] Add a 'center' functionality to a piece so it can be moved to correct starting point
 * [ ] When a piece hits the ground it maintains its rotation
 * [ ] After a piece of attached to the grid, any full lines are cleared out and bricks above the line are dropped down.
 * [ ] If a new piece is generated on top of an occupied cell, the game is over.

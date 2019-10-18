@@ -29,6 +29,12 @@ impl From<(usize, usize)> for GridCell {
     }
 }
 
+impl From<GridCell> for (i32, i32) {
+    fn from(item: GridCell) -> Self {
+        (item.col, item.row)
+    }
+}
+
 impl Add<(i32, i32)> for GridCell {
     type Output = Self;
 
@@ -37,12 +43,6 @@ impl Add<(i32, i32)> for GridCell {
             col: self.col + rhs.0,
             row: self.row + rhs.1,
         }
-    }
-}
-
-impl From<GridCell> for (i32, i32) {
-    fn from(item: GridCell) -> Self {
-        (item.col, item.row)
     }
 }
 
