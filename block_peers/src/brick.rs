@@ -5,7 +5,7 @@ use std::ops::Add;
 // GridCell
 // --------
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct GridCell {
     pub col: i32,
     pub row: i32,

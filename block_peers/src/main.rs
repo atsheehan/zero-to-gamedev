@@ -18,7 +18,7 @@ use std::time::{Duration, Instant};
 
 // Internal
 use brick::{BrickIterator, GridCell};
-use piece::{random_next_piece, rotated_index, Piece, Rotation};
+use piece::{random_next_piece, Piece};
 
 // Constants
 const WINDOW_WIDTH: u32 = 800;
@@ -34,7 +34,6 @@ struct Grid {
     cells: Vec<bool>,
     current_piece: Piece,
     drop_counter: u32,
-    rotation: Rotation,
 }
 
 impl Grid {
@@ -59,7 +58,6 @@ impl Grid {
             cells,
             current_piece,
             drop_counter: 0,
-            rotation: Rotation::Zero,
         }
     }
 
@@ -85,7 +83,6 @@ impl Grid {
     }
 
     fn move_piece_down(&mut self) -> bool {
-        // Always reset drop counter
         self.drop_counter = 0;
 
         let next = self.current_piece.move_down();
@@ -94,7 +91,7 @@ impl Grid {
             false
         } else {
             self.attach_piece_to_grid();
-            self.current_piece = random_next_piece();
+            self.current_piece = random_next_piece().move_right().move_right();
             true
         }
     }
@@ -104,7 +101,7 @@ impl Grid {
     }
 
     fn does_piece_fit(&self, piece: &Piece) -> bool {
-        for GridCell { row, col } in piece.piece_iter() {
+        for GridCell { row, col } in piece.local_iter() {
             let (x_offset, y_offset) = piece.origin();
             let x = col + x_offset;
             let y = row + y_offset;
@@ -118,28 +115,6 @@ impl Grid {
         true
     }
 
-    /*
-    fn does_piece_fit(&self, piece: Vec<bool>, rotation: Rotation, origin: (i32, i32)) -> bool {
-        for x in 0..4 {
-            for y in 0..4 {
-                let index = rotated_index(x, y, rotation.clone());
-                let grid_index = (origin.1 + y as i32) * self.width as i32 + (origin.0 + x as i32);
-
-                // Bounds check
-                if origin.0 + x as i32 >= 0 && (origin.0 + x as i32) < (self.width as i32) {
-                    if origin.1 + y as i32 >= 0 && (origin.1 + y as i32) < (self.height as i32) {
-                        // Collision check
-                        if piece[index] && self.cells[grid_index as usize] {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        true
-    }
-    */
-
     fn grid_iterator(&self, only_occupied: bool) -> BrickIterator {
         BrickIterator::new(
             (0, 0),
@@ -151,7 +126,7 @@ impl Grid {
     }
 
     fn attach_piece_to_grid(&mut self) {
-        for GridCell { row, col } in self.current_piece.piece_iter() {
+        for GridCell { row, col } in self.current_piece.local_iter() {
             let (x_offset, y_offset) = self.current_piece.origin();
             let x = col + x_offset;
             let y = row + y_offset;
@@ -188,7 +163,7 @@ impl Grid {
 
         // Render current piece new
         let piece_color = Color::RGB(255, 255, 255);
-        for GridCell { col, row } in self.current_piece.piece_iter() {
+        for GridCell { col, row } in self.current_piece.local_iter() {
             let (x_offset, y_offset) = self.current_piece.origin();
             let x = (col + x_offset) * CELL_SIZE as i32;
             let y = (row + y_offset) * CELL_SIZE as i32;
