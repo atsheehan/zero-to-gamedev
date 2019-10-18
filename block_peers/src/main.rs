@@ -161,7 +161,7 @@ impl Grid {
                 .expect("failed rect draw");
         }
 
-        // Render current piece new
+        // Render current piece
         let piece_color = Color::RGB(255, 255, 255);
         for GridCell { col, row } in self.current_piece.local_iter() {
             let (x_offset, y_offset) = self.current_piece.origin();

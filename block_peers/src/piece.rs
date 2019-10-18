@@ -127,7 +127,7 @@ impl Piece {
         Self {
             shape_idx,
             rotation: Rotation::Zero,
-            position: GridCell { col: 0, row: 0 },
+            position: GridCell::default(),
         }
     }
 

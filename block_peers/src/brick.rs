@@ -11,6 +11,12 @@ pub struct GridCell {
     pub row: i32,
 }
 
+impl Default for GridCell {
+    fn default() -> Self {
+        Self { col: 0, row: 0 }
+    }
+}
+
 impl From<(i32, i32)> for GridCell {
     fn from(item: (i32, i32)) -> Self {
         Self {
