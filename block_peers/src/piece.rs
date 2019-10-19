@@ -83,6 +83,14 @@ impl Piece {
         }
     }
 
+    pub fn move_up(&self) -> Self {
+        Self {
+            shape_idx: self.shape_idx,
+            rotation: self.rotation,
+            position: self.position + (0, -1),
+        }
+    }
+
     pub fn move_right(&self) -> Self {
         Self {
             shape_idx: self.shape_idx,

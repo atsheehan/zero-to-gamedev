@@ -136,50 +136,59 @@ impl Grid {
         }
     }
 
-    fn render(&self, canvas: &mut WindowCanvas) {
-        // Render board background
-        for GridCell { col, row } in self.grid_iterator(false) {
-            let color = Color::RGB(0, 0, 0);
-            let x = col as u32 * CELL_SIZE;
-            let y = row as u32 * CELL_SIZE;
-
-            canvas.set_draw_color(color);
-            canvas
-                .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
-                .expect("failed rect draw");
-        }
-
-        // Render occupied cells on the board
-        for GridCell { col, row } in self.grid_iterator(true) {
-            let color = Color::RGB(255, 255, 255);
-            let x = col as u32 * CELL_SIZE;
-            let y = row as u32 * CELL_SIZE;
-
-            canvas.set_draw_color(color);
-            canvas
-                .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
-                .expect("failed rect draw");
-        }
-
-        // Render current piece
-        let piece_color = Color::RGB(255, 255, 255);
-        for GridCell { col, row } in self.current_piece.local_iter() {
-            let (x_offset, y_offset) = self.current_piece.origin();
-            let x = (col + x_offset) * CELL_SIZE as i32;
-            let y = (row + y_offset) * CELL_SIZE as i32;
-            canvas.set_draw_color(piece_color);
-            canvas
-                .fill_rect(Rect::new(x, y, CELL_SIZE, CELL_SIZE))
-                .expect("failed rect draw");
-        }
-    }
-
     fn update(&mut self) {
         self.drop_counter += 1;
 
         if self.drop_counter >= 100 {
             self.move_piece_down();
         }
+    }
+
+    fn render(&self, canvas: &mut WindowCanvas) {
+        // Render board background
+        for cell in self.grid_iterator(false) {
+            self.render_brick(canvas, cell, Color::RGB(0, 0, 0));
+        }
+
+        // Render occupied cells on the board
+        for cell in self.grid_iterator(true) {
+            self.render_brick(canvas, cell, Color::RGB(255, 255, 255));
+        }
+
+        // Render current piece
+        let piece_color = Color::RGB(255, 255, 255);
+        self.render_piece(canvas, &self.current_piece, piece_color);
+
+        // Render ghost piece
+        let ghost_color = Color::RGB(125, 125, 125);
+        let mut ghost_piece = self.current_piece.move_down();
+        while self.does_piece_fit(&ghost_piece) {
+            ghost_piece = ghost_piece.move_down();
+        }
+        ghost_piece = ghost_piece.move_up();
+        self.render_piece(canvas, &ghost_piece, ghost_color);
+    }
+
+    fn render_piece(&self, canvas: &mut WindowCanvas, piece: &Piece, color: Color) {
+        for GridCell { col, row } in piece.local_iter() {
+            let (x_offset, y_offset) = piece.origin();
+            let x = (col + x_offset) * CELL_SIZE as i32;
+            let y = (row + y_offset) * CELL_SIZE as i32;
+            canvas.set_draw_color(color);
+            canvas
+                .fill_rect(Rect::new(x, y, CELL_SIZE, CELL_SIZE))
+                .expect("failed to render piece");
+        }
+    }
+
+    fn render_brick(&self, canvas: &mut WindowCanvas, cell: GridCell, color: Color) {
+        let x = cell.col as u32 * CELL_SIZE;
+        let y = cell.row as u32 * CELL_SIZE;
+
+        canvas.set_draw_color(color);
+        canvas
+            .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
+            .expect("failed to render brick");
     }
 }
 
