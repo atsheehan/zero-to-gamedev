@@ -118,11 +118,8 @@ impl Grid {
     }
 
     fn attach_piece_to_grid(&mut self) {
-        for GridCell { row, col } in self.current_piece.local_iter() {
-            let (x_offset, y_offset) = self.current_piece.origin();
-            let x = col + x_offset;
-            let y = row + y_offset;
-            let grid_index = y * self.width as i32 + x;
+        for GridCell { row, col } in self.current_piece.global_iter() {
+            let grid_index = row * self.width as i32 + col;
 
             self.cells[grid_index as usize] = true
         }
@@ -265,10 +262,9 @@ impl Grid {
     }
 
     fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, color: Color) {
-        for GridCell { col, row } in piece.local_iter() {
-            let (x_offset, y_offset) = piece.origin();
-            let x = (col + x_offset) * CELL_SIZE as i32;
-            let y = (row + y_offset) * CELL_SIZE as i32;
+        for GridCell { col, row } in piece.global_iter() {
+            let x = col * CELL_SIZE as i32;
+            let y = row * CELL_SIZE as i32;
             renderer.fill_rect(Rect::new(x, y, CELL_SIZE, CELL_SIZE), color);
         }
     }
