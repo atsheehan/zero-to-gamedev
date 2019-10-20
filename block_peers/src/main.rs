@@ -145,36 +145,35 @@ impl Grid {
                 if cell.row < above_line {
                     // Remove location of current cell only if it can go down.
                     let new_cell = cell + GridCell { col: 0, row: 1 };
-                    let new_index = new_cell.row * self.width as i32 + cell.col;
-
-                    if new_index <= 199 && !self.cells[new_index as usize] {
-                        let original_index = cell.row * self.width as i32 + cell.col;
-                        old_idx.push(original_index);
-                        new_idx.push(new_index);
+                    if new_cell.in_bounds(self.width as i32, self.height as i32) {
+                        let new_index = new_cell.row * self.width as i32 + cell.col;
+                        if !self.cells[new_index as usize] {
+                            let original_index = cell.row * self.width as i32 + cell.col;
+                            old_idx.push(original_index);
+                            new_idx.push(new_index);
+                        }
                     }
                 }
             }
 
             for old in old_idx {
-                if old <= 199 {
-                    self.cells[old as usize] = false;
-                }
+                self.cells[old as usize] = false;
             }
 
             for new in new_idx {
-                if new <= 199 {
-                    self.cells[new as usize] = true;
-                }
+                self.cells[new as usize] = true;
             }
 
             let mut any_brick_can_go_down = false;
             for cell in self.grid_iterator() {
                 if cell.row < above_line {
                     let new_cell = cell + GridCell { col: 0, row: 1 };
-                    let new_index = new_cell.row * self.width as i32 + cell.col;
+                    if new_cell.in_bounds(self.width as i32, self.height as i32) {
+                        let new_index = new_cell.row * self.width as i32 + cell.col;
 
-                    if new_index <= 199 && !self.cells[new_index as usize] {
-                        any_brick_can_go_down = true;
+                        if !self.cells[new_index as usize] {
+                            any_brick_can_go_down = true;
+                        }
                     }
                 }
             }
