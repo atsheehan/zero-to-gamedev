@@ -60,6 +60,7 @@ pub fn random_next_piece() -> Piece {
     Piece::new(idx)
 }
 
+#[derive(Clone, Copy)]
 pub struct Piece {
     shape_idx: usize,
     rotation: Rotation,
