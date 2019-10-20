@@ -26,6 +26,8 @@ const IS_DEBUG: bool = true;
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 const CELL_SIZE: u32 = 20;
+const GRID_HEIGHT: u32 = 20;
+const GRID_WIDTH: u32 = 10;
 const TICKS_PER_SECOND: u64 = 60;
 const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
 const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
@@ -304,7 +306,7 @@ pub fn main() {
     let mut fps_timer = Instant::now();
 
     // Game State
-    let mut grid = Grid::new(20, 10);
+    let mut grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
 
     'running: loop {
         for event in event_pump.poll_iter() {
