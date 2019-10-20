@@ -6,6 +6,7 @@ extern crate simplelog;
 
 mod brick;
 mod piece;
+mod render;
 mod util;
 
 // External
@@ -13,12 +14,12 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::render::WindowCanvas;
 use std::time::{Duration, Instant};
 
 // Internal
 use brick::{BrickIterator, GridCell};
 use piece::{random_next_piece, Piece};
+use render::Renderer;
 
 // Constants
 const WINDOW_WIDTH: u32 = 800;
@@ -144,20 +145,20 @@ impl Grid {
         }
     }
 
-    fn render(&self, canvas: &mut WindowCanvas) {
+    fn render(&self, renderer: &mut Renderer) {
         // Render board background
         for cell in self.grid_iterator(false) {
-            self.render_brick(canvas, cell, Color::RGB(0, 0, 0));
+            self.render_brick(renderer, cell, Color::RGB(0, 0, 0));
         }
 
         // Render occupied cells on the board
         for cell in self.grid_iterator(true) {
-            self.render_brick(canvas, cell, Color::RGB(255, 255, 255));
+            self.render_brick(renderer, cell, Color::RGB(255, 255, 255));
         }
 
         // Render current piece
         let piece_color = Color::RGB(255, 255, 255);
-        self.render_piece(canvas, &self.current_piece, piece_color);
+        self.render_piece(renderer, &self.current_piece, piece_color);
 
         // Render ghost piece
         let ghost_color = Color::RGB(125, 125, 125);
@@ -166,29 +167,23 @@ impl Grid {
             ghost_piece = ghost_piece.move_down();
         }
         ghost_piece = ghost_piece.move_up();
-        self.render_piece(canvas, &ghost_piece, ghost_color);
+        self.render_piece(renderer, &ghost_piece, ghost_color);
     }
 
-    fn render_piece(&self, canvas: &mut WindowCanvas, piece: &Piece, color: Color) {
+    fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, color: Color) {
         for GridCell { col, row } in piece.local_iter() {
             let (x_offset, y_offset) = piece.origin();
             let x = (col + x_offset) * CELL_SIZE as i32;
             let y = (row + y_offset) * CELL_SIZE as i32;
-            canvas.set_draw_color(color);
-            canvas
-                .fill_rect(Rect::new(x, y, CELL_SIZE, CELL_SIZE))
-                .expect("failed to render piece");
+            renderer.fill_rect(Rect::new(x, y, CELL_SIZE, CELL_SIZE), color);
         }
     }
 
-    fn render_brick(&self, canvas: &mut WindowCanvas, cell: GridCell, color: Color) {
+    fn render_brick(&self, renderer: &mut Renderer, cell: GridCell, color: Color) {
         let x = cell.col as u32 * CELL_SIZE;
         let y = cell.row as u32 * CELL_SIZE;
 
-        canvas.set_draw_color(color);
-        canvas
-            .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
-            .expect("failed to render brick");
+        renderer.fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE), color);
     }
 }
 
@@ -206,7 +201,7 @@ pub fn main() {
         .opengl()
         .build()
         .unwrap();
-    let mut canvas = window.into_canvas().present_vsync().build().unwrap();
+    let mut renderer = Renderer::new(window.into_canvas().present_vsync().build().unwrap());
 
     // Input
     let mut event_pump = sdl_context.event_pump().unwrap();
@@ -275,11 +270,10 @@ pub fn main() {
             ups += 1;
         }
 
-        canvas.set_draw_color(Color::RGB(75, 75, 75));
-        canvas.clear();
+        renderer.clear();
 
         // Render world here
-        grid.render(&mut canvas);
+        grid.render(&mut renderer);
         fps += 1;
 
         if fps_timer.elapsed().as_millis() >= 1000 {
@@ -289,6 +283,6 @@ pub fn main() {
             fps_timer = Instant::now();
         }
 
-        canvas.present();
+        renderer.present();
     }
 }
