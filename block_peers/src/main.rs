@@ -163,10 +163,12 @@ impl Grid {
         // Render ghost piece
         let ghost_color = Color::RGB(125, 125, 125);
         let mut ghost_piece = self.current_piece.move_down();
-        while self.does_piece_fit(&ghost_piece) {
-            ghost_piece = ghost_piece.move_down();
+        let mut next_ghost_piece = ghost_piece.move_down();
+
+        while self.does_piece_fit(&next_ghost_piece) {
+            ghost_piece = next_ghost_piece;
+            next_ghost_piece = ghost_piece.move_down();
         }
-        ghost_piece = ghost_piece.move_up();
         self.render_piece(renderer, &ghost_piece, ghost_color);
     }
 

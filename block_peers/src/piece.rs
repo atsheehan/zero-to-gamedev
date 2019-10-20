@@ -60,6 +60,7 @@ pub fn random_next_piece() -> Piece {
     Piece::new(idx)
 }
 
+#[derive(Clone, Copy)]
 pub struct Piece {
     shape_idx: usize,
     rotation: Rotation,
@@ -80,14 +81,6 @@ impl Piece {
             shape_idx: self.shape_idx,
             rotation: self.rotation,
             position: self.position + (0, 1),
-        }
-    }
-
-    pub fn move_up(&self) -> Self {
-        Self {
-            shape_idx: self.shape_idx,
-            rotation: self.rotation,
-            position: self.position + (0, -1),
         }
     }
 
