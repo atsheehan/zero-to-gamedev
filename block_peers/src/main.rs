@@ -94,13 +94,9 @@ impl Grid {
     }
 
     fn does_piece_fit(&self, piece: &Piece) -> bool {
-        for GridCell { row, col } in piece.local_iter() {
-            let (x_offset, y_offset) = piece.origin();
-            let x = col + x_offset;
-            let y = row + y_offset;
-
-            if x >= 0 && x <= (self.width as i32 - 1) && y >= 0 && y <= (self.height as i32 - 1) {
-                let grid_index = y * self.width as i32 + x;
+        for cell in piece.global_iter() {
+            if cell.in_bounds(self.width as i32, self.height as i32) {
+                let grid_index = cell.row * self.width as i32 + cell.col;
 
                 if self.cells[grid_index as usize] {
                     return false;
@@ -115,6 +111,10 @@ impl Grid {
 
     fn grid_iterator(&self) -> BrickIterator {
         BrickIterator::new((0, 0), self.width, self.height, self.cells.clone())
+    }
+
+    fn above_line_iterator(&self, line_num: u32) -> BrickIterator {
+        BrickIterator::new((0, 0), self.width, line_num, self.cells.clone())
     }
 
     fn attach_piece_to_grid(&mut self) {
@@ -138,42 +138,40 @@ impl Grid {
         let mut more_to_move = true;
 
         while more_to_move {
-            let mut old_idx: Vec<i32> = vec![];
+            let mut stale_idx: Vec<i32> = vec![];
             let mut new_idx: Vec<i32> = vec![];
 
-            for cell in self.grid_iterator() {
-                if cell.row < above_line {
-                    // Remove location of current cell only if it can go down.
-                    let new_cell = cell + GridCell { col: 0, row: 1 };
-                    if new_cell.in_bounds(self.width as i32, self.height as i32) {
-                        let new_index = new_cell.row * self.width as i32 + cell.col;
-                        if !self.cells[new_index as usize] {
-                            let original_index = cell.row * self.width as i32 + cell.col;
-                            old_idx.push(original_index);
-                            new_idx.push(new_index);
-                        }
+            // Move all active bricks above the line down one
+            for cell in self.above_line_iterator(above_line as u32) {
+                let new_cell = cell + GridCell { col: 0, row: 1 };
+
+                if new_cell.in_bounds(self.width as i32, self.height as i32) {
+                    let new_index = new_cell.row * self.width as i32 + cell.col;
+                    if !self.cells[new_index as usize] {
+                        let original_index = cell.row * self.width as i32 + cell.col;
+                        stale_idx.push(original_index);
+                        new_idx.push(new_index);
                     }
                 }
             }
 
-            for old in old_idx {
-                self.cells[old as usize] = false;
+            for idx in stale_idx {
+                self.cells[idx as usize] = false;
+            }
+            for idx in new_idx {
+                self.cells[idx as usize] = true;
             }
 
-            for new in new_idx {
-                self.cells[new as usize] = true;
-            }
-
+            // Detect if any other bricks still need to be moved down or not.
             let mut any_brick_can_go_down = false;
-            for cell in self.grid_iterator() {
-                if cell.row < above_line {
-                    let new_cell = cell + GridCell { col: 0, row: 1 };
-                    if new_cell.in_bounds(self.width as i32, self.height as i32) {
-                        let new_index = new_cell.row * self.width as i32 + cell.col;
+            for cell in self.above_line_iterator(above_line as u32) {
+                let new_cell = cell + GridCell { col: 0, row: 1 };
 
-                        if !self.cells[new_index as usize] {
-                            any_brick_can_go_down = true;
-                        }
+                if new_cell.in_bounds(self.width as i32, self.height as i32) {
+                    let new_index = new_cell.row * self.width as i32 + cell.col;
+
+                    if !self.cells[new_index as usize] {
+                        any_brick_can_go_down = true;
                     }
                 }
             }
@@ -245,7 +243,7 @@ impl Grid {
 
         // Render full lines for debugging
         if IS_DEBUG {
-            for row in 1..self.height {
+            for row in 0..self.height {
                 let mut full_line = true;
 
                 for col in 0..self.width {
