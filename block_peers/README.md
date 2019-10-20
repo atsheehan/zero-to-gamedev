@@ -25,10 +25,18 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * [x] When the active piece collides with an occupied cell on the grid, it attaches to the grid.
 * [x] The player can drop the piece to the bottom of the grid by pressing W.
 * [x] If the player has not moved the active piece down within 2 seconds, the piece automatically moves down one cell. If it collides with the floor or an occupied cell, it is attached to the grid.
-* [ ] The player can rotate the piece clockwise 90 degrees by pressing E.
+* [x] The player can rotate the piece clockwise 90 degrees by pressing E.
+* [x] Proper collision detection on rotated pieces
+* [x] When a piece hits the ground it maintains its rotation
+* [ ] Add a 'center' functionality to a piece so it can be moved to correct starting point
 * [ ] After a piece of attached to the grid, any full lines are cleared out and bricks above the line are dropped down.
 * [ ] If a new piece is generated on top of an occupied cell, the game is over.
 * [ ] When generating a new piece, any of the seven possible shapes can be chosen.
+
+### Discuss Next Pairing Session
+
+* Border being set to white for collision detection
+* Global vs. local iterator and fixing the crashes
 
 ## Backlog
 
