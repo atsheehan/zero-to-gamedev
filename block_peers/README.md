@@ -25,7 +25,10 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * [x] When the active piece collides with an occupied cell on the grid, it attaches to the grid.
 * [x] The player can drop the piece to the bottom of the grid by pressing W.
 * [x] If the player has not moved the active piece down within 2 seconds, the piece automatically moves down one cell. If it collides with the floor or an occupied cell, it is attached to the grid.
-* [ ] The player can rotate the piece clockwise 90 degrees by pressing E.
+* [x] The player can rotate the piece clockwise 90 degrees by pressing E.
+* [x] Proper collision detection on rotated pieces
+* [x] When a piece hits the ground it maintains its rotation
+* [ ] Add a 'center' functionality to a piece so it can be moved to correct starting point
 * [ ] After a piece of attached to the grid, any full lines are cleared out and bricks above the line are dropped down.
 * [ ] If a new piece is generated on top of an occupied cell, the game is over.
 * [ ] When generating a new piece, any of the seven possible shapes can be chosen.
@@ -68,3 +71,8 @@ When writing Tetris clones in the past, having a consistent name for everything 
 * A **cell** refers to any (row, col) coordinate in the grid. It can be empty or occupied by a brick.
 * A **brick** occupies a cell. It can be attached to the grid or part of the active piece moving around.
 * A **piece** is the collection of bricks a player controls. The arrangement of bricks is defined by the **shape** of the piece.
+
+### Discuss Next Pairing Session
+
+* Border being set to white for collision detection
+* Global vs. local iterator and fixing the crashes

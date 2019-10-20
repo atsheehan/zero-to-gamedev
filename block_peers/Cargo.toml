@@ -10,3 +10,4 @@ edition = "2018"
 sdl2 = { version = "0.32" }
 log = "0.4.8"
 simplelog = "^0.7.3"
+rand = "0.7.2"

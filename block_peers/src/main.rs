@@ -1,165 +1,101 @@
 #[macro_use]
 extern crate log;
+extern crate rand;
 extern crate sdl2;
 extern crate simplelog;
 
+mod brick;
+mod piece;
+mod render;
+mod util;
+
+// External
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
-use sdl2::render::WindowCanvas;
 use std::time::{Duration, Instant};
 
-mod util;
+// Internal
+use brick::{BrickIterator, GridCell};
+use piece::{random_next_piece, Piece};
+use render::Renderer;
 
+// Constants
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 const CELL_SIZE: u32 = 20;
-
 const TICKS_PER_SECOND: u64 = 60;
 const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
 const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
-
-struct BrickIterator {
-    origin: (i32, i32),
-    num_columns: u32,
-    num_rows: u32,
-    current_col: i32,
-    current_row: i32,
-    cells: Vec<bool>,
-}
-
-impl BrickIterator {
-    fn new(origin: (i32, i32), num_columns: u32, num_rows: u32, cells: Vec<bool>) -> Self {
-        BrickIterator {
-            origin,
-            num_columns,
-            num_rows,
-            current_col: 0,
-            current_row: 0,
-            cells,
-        }
-    }
-}
-
-impl Iterator for BrickIterator {
-    type Item = (i32, i32);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while self.current_row < self.num_rows as i32 {
-            while self.current_col < self.num_columns as i32 {
-                let index =
-                    ((self.current_row * self.num_columns as i32) + self.current_col) as usize;
-
-                if self.cells[index] {
-                    let (col_offset, row_offset) = self.origin;
-                    let col = self.current_col + col_offset;
-                    let row = self.current_row + row_offset;
-
-                    self.current_col += 1;
-                    return Some((col, row));
-                } else {
-                    self.current_col += 1;
-                }
-            }
-
-            self.current_row += 1;
-            self.current_col = 0;
-        }
-
-        None
-    }
-}
 
 struct Grid {
     height: u32,
     width: u32,
     cells: Vec<bool>,
-    current_piece: Vec<bool>,
-    current_piece_origin: (i32, i32),
+    current_piece: Piece,
     drop_counter: u32,
 }
 
 impl Grid {
     fn new(height: u32, width: u32) -> Self {
         let cell_count = height * width;
-        let cells = vec![false; cell_count as usize];
+        let mut cells = vec![false; cell_count as usize];
 
-        let mut current_piece = vec![false; 16];
-        let current_piece_origin = (2, 0);
+        // DISCUSS: Should this be removed? If so, we need to fix collision detection.
+        //
+        // Set border of our board to white for collision detection.
+        for x in 0..width {
+            for y in 0..height {
+                let index = (y * width + x) as usize;
+                cells[index] = x == 0 || x == width - 1 || y == height - 1;
+            }
+        }
 
-        current_piece[1] = true;
-        current_piece[2] = true;
-        current_piece[3] = true;
-        current_piece[6] = true;
+        // Move piece to right a bit to center it
+        let current_piece = random_next_piece().move_right().move_right();
 
         Self {
             height,
             width,
             cells,
             current_piece,
-            current_piece_origin,
             drop_counter: 0,
         }
     }
 
     fn move_piece_left(&mut self) {
-        let (x_offset, _) = self.current_piece_origin;
-        let x_offset = x_offset - 1;
-
-        for col in 0..4 {
-            for row in 0..4 {
-                let index = (row * 4) + col;
-
-                // brick is occupied
-                if self.current_piece[index] {
-                    let x = col as i32 + x_offset;
-                    if x < 0 || x >= self.width as i32 {
-                        return;
-                    }
-                }
-            }
+        let next = self.current_piece.move_left();
+        if self.does_piece_fit(&next) {
+            self.current_piece = next;
         }
-
-        self.current_piece_origin.0 -= 1;
     }
 
     fn move_piece_right(&mut self) {
-        let (x_offset, _) = self.current_piece_origin;
-        let x_offset = x_offset + 1;
-
-        for col in 0..4 {
-            for row in 0..4 {
-                let index = (row * 4) + col;
-
-                // brick is occupied
-                if self.current_piece[index] {
-                    let x = col as i32 + x_offset;
-                    if x < 0 || x >= self.width as i32 {
-                        return;
-                    }
-                }
-            }
+        let next = self.current_piece.move_right();
+        if self.does_piece_fit(&next) {
+            self.current_piece = next;
         }
+    }
 
-        self.current_piece_origin.0 += 1;
+    fn rotate(&mut self) {
+        let next = self.current_piece.rotate();
+        if self.does_piece_fit(&next) {
+            self.current_piece = next;
+        }
     }
 
     fn move_piece_down(&mut self) -> bool {
         self.drop_counter = 0;
 
-        let (x_offset, y_offset) = self.current_piece_origin;
-        let y_offset = y_offset + 1;
-
-        let next_piece_origin = (x_offset, y_offset);
-
-        if self.is_colliding(next_piece_origin) {
-            self.attach_piece_to_grid();
-            self.current_piece_origin = (2, 0);
-            true
-        } else {
-            self.current_piece_origin = next_piece_origin;
+        let next = self.current_piece.move_down();
+        if self.does_piece_fit(&next) {
+            self.current_piece = next;
             false
+        } else {
+            self.attach_piece_to_grid();
+            self.current_piece = random_next_piece().move_right().move_right();
+            true
         }
     }
 
@@ -167,70 +103,33 @@ impl Grid {
         while !self.move_piece_down() {}
     }
 
-    fn piece_iterator(&self, origin: (i32, i32)) -> BrickIterator {
-        BrickIterator::new(origin, 4, 4, self.current_piece.clone())
-    }
+    fn does_piece_fit(&self, piece: &Piece) -> bool {
+        for GridCell { row, col } in piece.local_iter() {
+            let (x_offset, y_offset) = piece.origin();
+            let x = col + x_offset;
+            let y = row + y_offset;
+            let grid_index = y * self.width as i32 + x;
 
-    fn is_colliding(&self, piece_origin: (i32, i32)) -> bool {
-        for (col, row) in self.piece_iterator(piece_origin) {
-            let grid_index = ((row * self.width as i32) + col) as usize;
-
-            if row >= self.height as i32 || self.cells[grid_index] {
-                return true;
+            if self.cells[grid_index as usize] {
+                return false;
             }
         }
 
-        false
+        true
+    }
+
+    fn grid_iterator(&self) -> BrickIterator {
+        BrickIterator::new((0, 0), self.width, self.height, self.cells.clone())
     }
 
     fn attach_piece_to_grid(&mut self) {
-        for (col, row) in self.piece_iterator(self.current_piece_origin) {
-            let index = ((row * self.width as i32) + col) as usize;
-            self.cells[index] = true;
-        }
-    }
+        for GridCell { row, col } in self.current_piece.local_iter() {
+            let (x_offset, y_offset) = self.current_piece.origin();
+            let x = col + x_offset;
+            let y = row + y_offset;
+            let grid_index = y * self.width as i32 + x;
 
-    fn render(&self, canvas: &mut WindowCanvas) {
-        // Render board
-        for col in 0..self.width {
-            for row in 0..self.height {
-                let index = (row * self.width) + col;
-                let color = if self.cells[index as usize] {
-                    Color::RGB(255, 255, 255)
-                } else {
-                    Color::RGB(0, 0, 0)
-                };
-
-                // determine cell size
-                let x = col * CELL_SIZE;
-                let y = row * CELL_SIZE;
-
-                canvas.set_draw_color(color);
-                canvas
-                    .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
-                    .expect("failed rect draw");
-            }
-        }
-
-        // Render current piece
-        for col in 0..4 {
-            for row in 0..4 {
-                let index = (row * 4) + col;
-
-                if self.current_piece[index as usize] {
-                    let color = Color::RGB(255, 255, 255);
-
-                    // determine cell size
-                    let (x_offset, y_offset) = self.current_piece_origin;
-                    let x = (col + x_offset) * CELL_SIZE as i32;
-                    let y = (row + y_offset) * CELL_SIZE as i32;
-
-                    canvas.set_draw_color(color);
-                    canvas
-                        .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
-                        .expect("failed rect draw");
-                }
-            }
+            self.cells[grid_index as usize] = true
         }
     }
 
@@ -241,13 +140,59 @@ impl Grid {
             self.move_piece_down();
         }
     }
+
+    fn render(&self, renderer: &mut Renderer) {
+        // Render board background
+        renderer.fill_rect(
+            Rect::new(0, 0, self.width * CELL_SIZE, self.height * CELL_SIZE),
+            Color::RGB(0, 0, 0),
+        );
+
+        // Render occupied cells on the board
+        for cell in self.grid_iterator() {
+            self.render_brick(renderer, cell, Color::RGB(255, 255, 255));
+        }
+
+        // Render current piece
+        let piece_color = Color::RGB(255, 255, 255);
+        self.render_piece(renderer, &self.current_piece, piece_color);
+
+        // Render ghost piece
+        let ghost_color = Color::RGB(125, 125, 125);
+        let mut ghost_piece = self.current_piece.move_down();
+        let mut next_ghost_piece = ghost_piece.move_down();
+
+        while self.does_piece_fit(&next_ghost_piece) {
+            ghost_piece = next_ghost_piece;
+            next_ghost_piece = ghost_piece.move_down();
+        }
+        self.render_piece(renderer, &ghost_piece, ghost_color);
+    }
+
+    fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, color: Color) {
+        for GridCell { col, row } in piece.local_iter() {
+            let (x_offset, y_offset) = piece.origin();
+            let x = (col + x_offset) * CELL_SIZE as i32;
+            let y = (row + y_offset) * CELL_SIZE as i32;
+            renderer.fill_rect(Rect::new(x, y, CELL_SIZE, CELL_SIZE), color);
+        }
+    }
+
+    fn render_brick(&self, renderer: &mut Renderer, cell: GridCell, color: Color) {
+        let x = cell.col as u32 * CELL_SIZE;
+        let y = cell.row as u32 * CELL_SIZE;
+
+        renderer.fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE), color);
+    }
 }
 
 pub fn main() {
+    // Subsystems Init
     util::init_logging();
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
+    // Draw
     let window = video_subsystem
         .window("Block Peers", WINDOW_WIDTH, WINDOW_HEIGHT)
         .position_centered()
@@ -255,21 +200,20 @@ pub fn main() {
         .opengl()
         .build()
         .unwrap();
+    let mut renderer = Renderer::new(window.into_canvas().present_vsync().build().unwrap());
 
-    let mut canvas = window.into_canvas().present_vsync().build().unwrap();
-
+    // Input
     let mut event_pump = sdl_context.event_pump().unwrap();
 
+    // Timing
     let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
     let mut previous_instant = Instant::now();
-
-    // Grids
-    let mut grid = Grid::new(20, 10);
-
-    // Debug
     let mut fps = 0;
     let mut ups = 0;
     let mut fps_timer = Instant::now();
+
+    // Game State
+    let mut grid = Grid::new(22, 11);
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -308,6 +252,12 @@ pub fn main() {
                 } => {
                     grid.move_piece_to_bottom();
                 }
+                Event::KeyDown {
+                    keycode: Some(Keycode::E),
+                    ..
+                } => {
+                    grid.rotate();
+                }
                 _ => {}
             }
         }
@@ -319,11 +269,10 @@ pub fn main() {
             ups += 1;
         }
 
-        canvas.set_draw_color(Color::RGB(75, 75, 75));
-        canvas.clear();
+        renderer.clear();
 
         // Render world here
-        grid.render(&mut canvas);
+        grid.render(&mut renderer);
         fps += 1;
 
         if fps_timer.elapsed().as_millis() >= 1000 {
@@ -333,6 +282,6 @@ pub fn main() {
             fps_timer = Instant::now();
         }
 
-        canvas.present();
+        renderer.present();
     }
 }
