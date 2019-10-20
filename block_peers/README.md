@@ -33,6 +33,11 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * [ ] If a new piece is generated on top of an occupied cell, the game is over.
 * [ ] When generating a new piece, any of the seven possible shapes can be chosen.
 
+### Discuss Next Pairing Session
+
+* Border being set to white for collision detection
+* Global vs. local iterator and fixing the crashes
+
 ## Backlog
 
 * Track lines cleared / points

@@ -41,7 +41,9 @@ impl Grid {
         let cell_count = height * width;
         let mut cells = vec![false; cell_count as usize];
 
-        // Set border of our board to white
+        // DISCUSS: Should this be removed? If so, we need to fix collision detection.
+        //
+        // Set border of our board to white for collision detection.
         for x in 0..width {
             for y in 0..height {
                 let index = (y * width + x) as usize;
@@ -115,13 +117,12 @@ impl Grid {
         true
     }
 
-    fn grid_iterator(&self, only_occupied: bool) -> BrickIterator {
+    fn grid_iterator(&self) -> BrickIterator {
         BrickIterator::new(
             (0, 0),
             self.width,
             self.height,
             self.cells.clone(),
-            only_occupied,
         )
     }
 
@@ -138,19 +139,18 @@ impl Grid {
 
     fn render(&self, canvas: &mut WindowCanvas) {
         // Render board background
-        for GridCell { col, row } in self.grid_iterator(false) {
-            let color = Color::RGB(0, 0, 0);
-            let x = col as u32 * CELL_SIZE;
-            let y = row as u32 * CELL_SIZE;
-
-            canvas.set_draw_color(color);
-            canvas
-                .fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE))
-                .expect("failed rect draw");
-        }
+        canvas.set_draw_color(Color::RGB(0, 0, 0));
+        canvas
+            .fill_rect(Rect::new(
+                0,
+                0,
+                self.width * CELL_SIZE,
+                self.height * CELL_SIZE,
+            ))
+            .expect("failed render background");
 
         // Render occupied cells on the board
-        for GridCell { col, row } in self.grid_iterator(true) {
+        for GridCell { col, row } in self.grid_iterator() {
             let color = Color::RGB(255, 255, 255);
             let x = col as u32 * CELL_SIZE;
             let y = row as u32 * CELL_SIZE;

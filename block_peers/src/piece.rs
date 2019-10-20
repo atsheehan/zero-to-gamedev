@@ -11,9 +11,9 @@ type PieceShape = [bool; 16];
 #[cfg_attr(rustfmt, rustfmt_skip)]
 const SHAPES: [PieceShape; 7] = [
     [
-        false, true,  true,  true, 
-        false, false, true,  false, 
-        false, false, false, false, 
+        false, false, false,  false,
+        false, true,  true,  true,
+        false, false, true,  false,
         false, false, false, false,
     ],
     [
@@ -79,7 +79,7 @@ impl Piece {
         Self {
             shape_idx: self.shape_idx,
             rotation: self.rotation,
-            position: self.position + (0, 1),
+            position: self.position + GridCell { col: 0, row: 1 },
         }
     }
 
@@ -87,7 +87,7 @@ impl Piece {
         Self {
             shape_idx: self.shape_idx,
             rotation: self.rotation,
-            position: self.position + (1, 0),
+            position: self.position + GridCell { col: 1, row: 0 },
         }
     }
 
@@ -95,7 +95,7 @@ impl Piece {
         Self {
             shape_idx: self.shape_idx,
             rotation: self.rotation,
-            position: self.position + (-1, 0),
+            position: self.position + GridCell { col: -1, row: 0 },
         }
     }
 
@@ -248,7 +248,7 @@ fn test_piece_iterator() {
     let tests: Vec<PieceIterTest> = vec![
         PieceIterTest {
             piece: Piece::new(0),
-            expected: vec![(1, 0).into(), (2, 0).into(), (3, 0).into(), (2, 1).into()],
+            expected: vec![(1, 1).into(), (2, 1).into(), (3, 1).into(), (2, 2).into()],
         },
         PieceIterTest {
             piece: Piece::new(1),

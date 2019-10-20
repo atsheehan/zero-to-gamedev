@@ -18,19 +18,16 @@ impl Default for GridCell {
 }
 
 impl From<(i32, i32)> for GridCell {
-    fn from(item: (i32, i32)) -> Self {
-        Self {
-            col: item.0,
-            row: item.1,
-        }
+    fn from((col, row): (i32, i32)) -> Self {
+        Self { col, row }
     }
 }
 
 impl From<(usize, usize)> for GridCell {
-    fn from(item: (usize, usize)) -> Self {
+    fn from((col, row): (usize, usize)) -> Self {
         Self {
-            col: item.0 as i32,
-            row: item.1 as i32,
+            col: col as i32,
+            row: row as i32,
         }
     }
 }
@@ -44,10 +41,21 @@ impl From<GridCell> for (i32, i32) {
 impl Add<(i32, i32)> for GridCell {
     type Output = Self;
 
-    fn add(self, rhs: (i32, i32)) -> Self {
+    fn add(self, (col, row): (i32, i32)) -> Self {
         Self {
-            col: self.col + rhs.0,
-            row: self.row + rhs.1,
+            col: self.col + col,
+            row: self.row + row,
+        }
+    }
+}
+
+impl Add<GridCell> for GridCell {
+    type Output = Self;
+
+    fn add(self, rhs: GridCell) -> Self {
+        Self {
+            col: self.col + rhs.col,
+            row: self.row + rhs.row,
         }
     }
 }
@@ -63,17 +71,10 @@ pub struct BrickIterator {
     current_col: i32,
     current_row: i32,
     cells: Vec<bool>,
-    only_occupied: bool,
 }
 
 impl BrickIterator {
-    pub fn new(
-        origin: (i32, i32),
-        num_columns: u32,
-        num_rows: u32,
-        cells: Vec<bool>,
-        only_occupied: bool,
-    ) -> Self {
+    pub fn new(origin: (i32, i32), num_columns: u32, num_rows: u32, cells: Vec<bool>) -> Self {
         BrickIterator {
             origin,
             num_columns,
@@ -81,7 +82,6 @@ impl BrickIterator {
             current_col: 0,
             current_row: 0,
             cells,
-            only_occupied,
         }
     }
 }
@@ -95,24 +95,15 @@ impl Iterator for BrickIterator {
                 let index =
                     ((self.current_row * self.num_columns as i32) + self.current_col) as usize;
 
-                if self.only_occupied {
-                    if self.cells[index] {
-                        let (col_offset, row_offset) = self.origin;
-                        let col = self.current_col + col_offset;
-                        let row = self.current_row + row_offset;
-
-                        self.current_col += 1;
-                        return Some(GridCell { col, row });
-                    } else {
-                        self.current_col += 1;
-                    }
-                } else {
+                if self.cells[index] {
                     let (col_offset, row_offset) = self.origin;
                     let col = self.current_col + col_offset;
                     let row = self.current_row + row_offset;
 
                     self.current_col += 1;
                     return Some(GridCell { col, row });
+                } else {
+                    self.current_col += 1;
                 }
             }
 
