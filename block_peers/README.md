@@ -30,6 +30,28 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * [ ] If a new piece is generated on top of an occupied cell, the game is over.
 * [ ] When generating a new piece, any of the seven possible shapes can be chosen.
 
+## Iteration 2 - Networked Client
+
+This deliverable will separate the game into client and server applications that communicate over the network. The server will run the game logic and the client will handle rendering and user input. The client and server will communicate using UDP.
+
+This will still be a single player game, but I think splitting client and server functionality first will make it easier to add networked multiplayer functionality on top of it. This will be a barebones protocol that doesn't attempt to be secure or robust in any way, it's just to get something working.
+
+* When the server start it listens for client connections.
+* As soon as a client joins, the server starts the game and sends the initial state.
+* The client renders the state and sends any user commands to the server.
+* Whenever the state changes, the server sends the new state to the client.
+* When the client quits, it disconnects from the server.
+* The server can only have active client at a time. Other clients attempting to connect will receive a rejection message.
+
+### Story Breakdown
+
+* [ ] Server process listens on UDP port 4485. When a client connects, it responds with an ACK message.
+* [ ] Server sends the initial game state to the client and the client renders it.
+* [ ] Client sends any user commands to the server and the server responds with the new state.
+* [ ] Server sends game state whenever it changes.
+* [ ] Client disconnects before quitting.
+* [ ] Server rejects connections while a session is active.
+
 ## Backlog
 
 * Track lines cleared / points
@@ -37,7 +59,6 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * Adding a second player / competitive play
 * Sounds / music
 * Title screen
-* Networked clients
 
 ## Glossary
 
