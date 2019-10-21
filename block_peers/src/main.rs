@@ -153,6 +153,7 @@ impl Grid {
             ghost_piece = next_ghost_piece;
             next_ghost_piece = ghost_piece.move_down();
         }
+
         self.render_piece(renderer, &ghost_piece, Opacity::Translucent(128));
     }
 
@@ -161,7 +162,7 @@ impl Grid {
             let x = col * CELL_SIZE as i32;
             let y = row * CELL_SIZE as i32;
             renderer.render_image(
-                Image::RedBrick,
+                piece.image(),
                 Rect::new(x, y, CELL_SIZE, CELL_SIZE),
                 opacity,
             );

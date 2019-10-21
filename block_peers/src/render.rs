@@ -9,12 +9,32 @@ use std::path::Path;
 #[derive(Copy, Clone)]
 pub enum Image {
     RedBrick,
+    GreenBrick,
+    BlueBrick,
+    YellowBrick,
+    OrangeBrick,
+    PurpleBrick,
+    TealBrick,
+    SmokeBrick(i32),
 }
 
 impl Image {
     fn source_rect(self) -> Rect {
         match self {
-            Image::RedBrick => Rect::new(0, 0, 32, 32),
+            Self::RedBrick => Rect::new(0, 0, 32, 32),
+            Self::GreenBrick => Rect::new(32, 0, 32, 32),
+            Self::BlueBrick => Rect::new(64, 0, 32, 32),
+            Self::YellowBrick => Rect::new(96, 0, 32, 32),
+            Self::OrangeBrick => Rect::new(128, 0, 32, 32),
+            Self::PurpleBrick => Rect::new(160, 0, 32, 32),
+            Self::TealBrick => Rect::new(192, 0, 32, 32),
+            Self::SmokeBrick(frame) => {
+                if frame > 12 {
+                    panic!("unavailable smoke brick, greatest index is 12")
+                }
+                let x = frame * 32;
+                Rect::new(x as i32, 32, 32, 32)
+            }
         }
     }
 }
@@ -47,10 +67,7 @@ impl Renderer {
             .load_texture(Path::new("assets/tiles.png"))
             .unwrap();
 
-        Self {
-            canvas,
-            texture,
-        }
+        Self { canvas, texture }
     }
 
     pub fn clear(&mut self) {
@@ -64,11 +81,30 @@ impl Renderer {
 
     pub fn fill_rect(&mut self, rect: Rect, color: Color) {
         self.canvas.set_draw_color(color);
-        self.canvas.fill_rect(rect).unwrap();
+        self.canvas.fill_rect(rect).expect("failed to fill rect");
     }
 
     pub fn render_image(&mut self, image: Image, dest_rect: Rect, opacity: Opacity) {
         self.texture.set_alpha_mod(opacity.alpha());
-        self.canvas.copy(&self.texture, image.source_rect(), dest_rect).unwrap();
+        self.canvas
+            .copy(&self.texture, image.source_rect(), dest_rect)
+            .expect("failed to render image");
+    }
+}
+
+// --------
+// Tests
+// --------
+
+#[test]
+#[should_panic]
+fn test_invalid_smoke_brick() {
+    Image::SmokeBrick(13).source_rect();
+}
+
+#[test]
+fn test_valid_smoke_brick() {
+    for i in 0..12 {
+        Image::SmokeBrick(i as i32).source_rect();
     }
 }

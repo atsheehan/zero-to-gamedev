@@ -1,6 +1,7 @@
 use rand::Rng;
 
 use crate::brick::GridCell;
+use crate::render::Image;
 
 // --------
 // Piece
@@ -68,6 +69,19 @@ pub struct Piece {
 }
 
 impl Piece {
+    pub fn image(&self) -> Image {
+        match self.shape_idx {
+            0 => Image::RedBrick,
+            1 => Image::GreenBrick,
+            2 => Image::BlueBrick,
+            3 => Image::YellowBrick,
+            4 => Image::OrangeBrick,
+            5 => Image::PurpleBrick,
+            6 => Image::TealBrick,
+            _ => Image::SmokeBrick(0),
+        }
+    }
+
     pub fn rotate(&self) -> Self {
         Self {
             shape_idx: self.shape_idx,
@@ -268,7 +282,7 @@ fn test_piece_iterator() {
 
     for tt in tests {
         let mut result: Vec<GridCell> = vec![];
-        for cell in tt.piece.local_iter() {
+        for cell in tt.piece.global_iter() {
             result.push(cell);
         }
         assert_eq!(tt.expected, result);
