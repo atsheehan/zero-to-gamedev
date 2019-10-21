@@ -33,7 +33,7 @@ impl Image {
                     panic!("unavailable smoke brick, greatest index is 12")
                 }
                 let x = frame * 32;
-                Rect::new(x as i32, 32, 32, 32)
+                Rect::new(x, 32, 32, 32)
             }
         }
     }

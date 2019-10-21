@@ -35,6 +35,7 @@ struct Grid {
     height: u32,
     width: u32,
     cells: Vec<bool>,
+    cell_images: Vec<Option<Image>>,
     current_piece: Piece,
     drop_counter: u32,
 }
@@ -43,6 +44,7 @@ impl Grid {
     fn new(height: u32, width: u32) -> Self {
         let cell_count = height * width;
         let cells = vec![false; cell_count as usize];
+        let cell_images = vec![None; cell_count as usize];
         // Move piece to right a bit to center it
         let current_piece = random_next_piece().move_right().move_right();
 
@@ -50,6 +52,7 @@ impl Grid {
             height,
             width,
             cells,
+            cell_images,
             current_piece,
             drop_counter: 0,
         }
@@ -118,7 +121,8 @@ impl Grid {
         for GridCell { row, col } in self.current_piece.global_iter() {
             let grid_index = row * self.width as i32 + col;
 
-            self.cells[grid_index as usize] = true
+            self.cells[grid_index as usize] = true;
+            self.cell_images[grid_index as usize] = Some(self.current_piece.image());
         }
     }
 
@@ -139,7 +143,10 @@ impl Grid {
 
         // Render occupied cells on the board
         for cell in self.grid_iterator() {
-            self.render_brick(renderer, cell, Opacity::Opaque);
+            let grid_index = cell.row * self.width as i32 + cell.col;
+            if let Some(image) = self.cell_images[grid_index as usize] {
+                self.render_brick(renderer, cell, image, Opacity::Opaque);
+            }
         }
 
         // Render current piece
@@ -169,12 +176,18 @@ impl Grid {
         }
     }
 
-    fn render_brick(&self, renderer: &mut Renderer, cell: GridCell, opacity: Opacity) {
+    fn render_brick(
+        &self,
+        renderer: &mut Renderer,
+        cell: GridCell,
+        image: Image,
+        opacity: Opacity,
+    ) {
         let x = cell.col as u32 * CELL_SIZE;
         let y = cell.row as u32 * CELL_SIZE;
 
         renderer.render_image(
-            Image::RedBrick,
+            image,
             Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE),
             opacity,
         );
