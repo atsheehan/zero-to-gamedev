@@ -11,6 +11,12 @@ pub struct GridCell {
     pub row: i32,
 }
 
+impl GridCell {
+    pub fn in_bounds(&self, width: i32, height: i32) -> bool {
+        self.col >= 0 && self.col <= width - 1 && self.row >= 0 && self.row <= height - 1
+    }
+}
+
 impl Default for GridCell {
     fn default() -> Self {
         Self { col: 0, row: 0 }

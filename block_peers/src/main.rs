@@ -25,6 +25,8 @@ use render::Renderer;
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 const CELL_SIZE: u32 = 20;
+const GRID_HEIGHT: u32 = 20;
+const GRID_WIDTH: u32 = 10;
 const TICKS_PER_SECOND: u64 = 60;
 const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
 const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
@@ -40,18 +42,7 @@ struct Grid {
 impl Grid {
     fn new(height: u32, width: u32) -> Self {
         let cell_count = height * width;
-        let mut cells = vec![false; cell_count as usize];
-
-        // DISCUSS: Should this be removed? If so, we need to fix collision detection.
-        //
-        // Set border of our board to white for collision detection.
-        for x in 0..width {
-            for y in 0..height {
-                let index = (y * width + x) as usize;
-                cells[index] = x == 0 || x == width - 1 || y == height - 1;
-            }
-        }
-
+        let cells = vec![false; cell_count as usize];
         // Move piece to right a bit to center it
         let current_piece = random_next_piece().move_right().move_right();
 
@@ -104,13 +95,14 @@ impl Grid {
     }
 
     fn does_piece_fit(&self, piece: &Piece) -> bool {
-        for GridCell { row, col } in piece.local_iter() {
-            let (x_offset, y_offset) = piece.origin();
-            let x = col + x_offset;
-            let y = row + y_offset;
-            let grid_index = y * self.width as i32 + x;
+        for cell in piece.global_iter() {
+            if cell.in_bounds(self.width as i32, self.height as i32) {
+                let grid_index = cell.row * self.width as i32 + cell.col;
 
-            if self.cells[grid_index as usize] {
+                if self.cells[grid_index as usize] {
+                    return false;
+                }
+            } else {
                 return false;
             }
         }
@@ -123,11 +115,8 @@ impl Grid {
     }
 
     fn attach_piece_to_grid(&mut self) {
-        for GridCell { row, col } in self.current_piece.local_iter() {
-            let (x_offset, y_offset) = self.current_piece.origin();
-            let x = col + x_offset;
-            let y = row + y_offset;
-            let grid_index = y * self.width as i32 + x;
+        for GridCell { row, col } in self.current_piece.global_iter() {
+            let grid_index = row * self.width as i32 + col;
 
             self.cells[grid_index as usize] = true
         }
@@ -170,10 +159,9 @@ impl Grid {
     }
 
     fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, color: Color) {
-        for GridCell { col, row } in piece.local_iter() {
-            let (x_offset, y_offset) = piece.origin();
-            let x = (col + x_offset) * CELL_SIZE as i32;
-            let y = (row + y_offset) * CELL_SIZE as i32;
+        for GridCell { col, row } in piece.global_iter() {
+            let x = col * CELL_SIZE as i32;
+            let y = row * CELL_SIZE as i32;
             renderer.fill_rect(Rect::new(x, y, CELL_SIZE, CELL_SIZE), color);
         }
     }
@@ -213,7 +201,7 @@ pub fn main() {
     let mut fps_timer = Instant::now();
 
     // Game State
-    let mut grid = Grid::new(22, 11);
+    let mut grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
 
     'running: loop {
         for event in event_pump.poll_iter() {

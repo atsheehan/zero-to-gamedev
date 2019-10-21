@@ -100,22 +100,11 @@ impl Piece {
         }
     }
 
-    /// `local_iter` provides the (col, row) of occupied bricks inside the "local"
-    /// 4x4 context of a PieceShape taking the current rotation into consideration.
-    pub fn local_iter(&self) -> PieceIterator {
-        PieceIterator::new(self.cells(), self.rotation, None)
-    }
-
     /// `global_iter` provides the (col, row) of occupied bricks inside the "global"
     /// grid context of a PieceShape taking the current rotation and the pieces
     /// origin into consideration.
-    #[allow(dead_code)]
     pub fn global_iter(&self) -> PieceIterator {
         PieceIterator::new(self.cells(), self.rotation, Some(self.position))
-    }
-
-    pub fn origin(&self) -> (i32, i32) {
-        (self.position.col, self.position.row)
     }
 }
 
@@ -171,7 +160,7 @@ impl Iterator for PieceIterator {
                     self.current_col += 1;
 
                     if let Some(pos) = self.position {
-                        return Some((col + pos.col as usize, row + pos.row as usize).into());
+                        return Some((col as i32 + pos.col, row as i32 + pos.row).into());
                     } else {
                         return Some((col, row).into());
                     }
