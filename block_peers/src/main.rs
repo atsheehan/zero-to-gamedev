@@ -22,7 +22,6 @@ use piece::{random_next_piece, Piece};
 use render::Renderer;
 
 // Constants
-const IS_DEBUG: bool = true;
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 const CELL_SIZE: u32 = 20;
@@ -115,93 +114,11 @@ impl Grid {
         BrickIterator::new((0, 0), self.width, self.height, self.cells.clone())
     }
 
-    fn above_line_iterator(&self, line_num: u32) -> BrickIterator {
-        BrickIterator::new((0, 0), self.width, line_num, self.cells.clone())
-    }
-
     fn attach_piece_to_grid(&mut self) {
         for GridCell { row, col } in self.current_piece.global_iter() {
             let grid_index = row * self.width as i32 + col;
 
             self.cells[grid_index as usize] = true
-        }
-
-        self.clear_full_lines();
-    }
-
-    // This is a pretttty ugly implementation haha. Not entirely sure on how we want blocks to
-    // actually fall. Here is an article I found with different ways of approaching it:
-    //
-    // https://gamedevelopment.tutsplus.com/tutorials/implementing-tetris-clearing-lines--gamedev-1197
-    fn move_bricks_down(&mut self, above_line: i32) {
-        let mut more_to_move = true;
-
-        while more_to_move {
-            let mut stale_idx: Vec<i32> = vec![];
-            let mut new_idx: Vec<i32> = vec![];
-
-            // Move all active bricks above the line down one
-            for cell in self.above_line_iterator(above_line as u32) {
-                let new_cell = cell + GridCell { col: 0, row: 1 };
-
-                if new_cell.in_bounds(self.width as i32, self.height as i32) {
-                    let new_index = new_cell.row * self.width as i32 + cell.col;
-                    if !self.cells[new_index as usize] {
-                        let original_index = cell.row * self.width as i32 + cell.col;
-                        stale_idx.push(original_index);
-                        new_idx.push(new_index);
-                    }
-                }
-            }
-
-            for idx in stale_idx {
-                self.cells[idx as usize] = false;
-            }
-            for idx in new_idx {
-                self.cells[idx as usize] = true;
-            }
-
-            // Detect if any other bricks still need to be moved down or not.
-            let mut any_brick_can_go_down = false;
-            for cell in self.above_line_iterator(above_line as u32) {
-                let new_cell = cell + GridCell { col: 0, row: 1 };
-
-                if new_cell.in_bounds(self.width as i32, self.height as i32) {
-                    let new_index = new_cell.row * self.width as i32 + cell.col;
-
-                    if !self.cells[new_index as usize] {
-                        any_brick_can_go_down = true;
-                    }
-                }
-            }
-            more_to_move = any_brick_can_go_down;
-        }
-
-        // TODO: Do we clear lines that were made from falling at the same time??
-        self.clear_full_lines();
-    }
-
-    fn clear_full_lines(&mut self) {
-        // TODO: Maybe create some sort of line iterator that iterates from bottom up?
-        let mut row = self.height - 1;
-
-        while row > 0 {
-            let mut full_line = true;
-            for col in 0..self.width {
-                let index = row * self.width + col;
-                full_line &= self.cells[index as usize];
-            }
-
-            if full_line {
-                for col in 0..self.width {
-                    let index = row * self.width + col;
-                    self.cells[index as usize] = false;
-                }
-                // Move bricks down that are above this line
-                self.move_bricks_down(row as i32);
-            }
-
-            row -= 1;
         }
     }
 
@@ -239,28 +156,6 @@ impl Grid {
             next_ghost_piece = ghost_piece.move_down();
         }
         self.render_piece(renderer, &ghost_piece, ghost_color);
-
-        // Render full lines for debugging
-        if IS_DEBUG {
-            for row in 0..self.height {
-                let mut full_line = true;
-
-                for col in 0..self.width {
-                    let index = row * self.width + col;
-                    full_line &= self.cells[index as usize];
-                }
-
-                if full_line {
-                    for col in 0..self.width {
-                        let cell = GridCell {
-                            col: col as i32,
-                            row: row as i32,
-                        };
-                        self.render_brick(renderer, cell, Color::RGB(255, 40, 40));
-                    }
-                }
-            }
-        }
     }
 
     fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, color: Color) {
