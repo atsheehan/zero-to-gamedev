@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 // Internal
 use brick::{BrickIterator, GridCell};
 use piece::{random_next_piece, Piece};
-use render::Renderer;
+use render::{Image, Opacity, Renderer};
 
 // Constants
 const WINDOW_WIDTH: u32 = 800;
@@ -139,15 +139,13 @@ impl Grid {
 
         // Render occupied cells on the board
         for cell in self.grid_iterator() {
-            self.render_brick(renderer, cell, Color::RGB(255, 255, 255));
+            self.render_brick(renderer, cell, Opacity::Opaque);
         }
 
         // Render current piece
-        let piece_color = Color::RGB(255, 255, 255);
-        self.render_piece(renderer, &self.current_piece, piece_color);
+        self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
 
         // Render ghost piece
-        let ghost_color = Color::RGB(125, 125, 125);
         let mut ghost_piece = self.current_piece.move_down();
         let mut next_ghost_piece = ghost_piece.move_down();
 
@@ -155,22 +153,30 @@ impl Grid {
             ghost_piece = next_ghost_piece;
             next_ghost_piece = ghost_piece.move_down();
         }
-        self.render_piece(renderer, &ghost_piece, ghost_color);
+        self.render_piece(renderer, &ghost_piece, Opacity::Translucent(128));
     }
 
-    fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, color: Color) {
+    fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, opacity: Opacity) {
         for GridCell { col, row } in piece.global_iter() {
             let x = col * CELL_SIZE as i32;
             let y = row * CELL_SIZE as i32;
-            renderer.fill_rect(Rect::new(x, y, CELL_SIZE, CELL_SIZE), color);
+            renderer.render_image(
+                Image::RedBrick,
+                Rect::new(x, y, CELL_SIZE, CELL_SIZE),
+                opacity,
+            );
         }
     }
 
-    fn render_brick(&self, renderer: &mut Renderer, cell: GridCell, color: Color) {
+    fn render_brick(&self, renderer: &mut Renderer, cell: GridCell, opacity: Opacity) {
         let x = cell.col as u32 * CELL_SIZE;
         let y = cell.row as u32 * CELL_SIZE;
 
-        renderer.fill_rect(Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE), color);
+        renderer.render_image(
+            Image::RedBrick,
+            Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE),
+            opacity,
+        );
     }
 }
 
@@ -179,6 +185,7 @@ pub fn main() {
     util::init_logging();
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
+    let _image = sdl2::image::init(sdl2::image::InitFlag::PNG).unwrap();
 
     // Draw
     let window = video_subsystem
