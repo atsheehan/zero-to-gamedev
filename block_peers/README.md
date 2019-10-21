@@ -33,10 +33,27 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * [x] After a piece is attached to the grid, any full lines are cleared out and bricks above the line are dropped down.
 * [ ] If a new piece is generated on top of an occupied cell, the game is over.
 
-### Discuss Next Pairing Session
+## Iteration 2 - Networked Client
 
-* Border being set to white for collision detection
-* Global vs. local iterator and fixing the crashes
+This deliverable will separate the game into client and server applications that communicate over the network. The server will run the game logic and the client will handle rendering and user input. The client and server will communicate using UDP.
+
+This will still be a single player game, but I think splitting client and server functionality first will make it easier to add networked multiplayer functionality on top of it. This will be a barebones protocol that doesn't attempt to be secure or robust in any way, it's just to get something working.
+
+* When the server start it listens for client connections.
+* As soon as a client joins, the server starts the game and sends the initial state.
+* The client renders the state and sends any user commands to the server.
+* Whenever the state changes, the server sends the new state to the client.
+* When the client quits, it disconnects from the server.
+* The server can only have active client at a time. Other clients attempting to connect will receive a rejection message.
+
+### Story Breakdown
+
+* [ ] Server process listens on UDP port 4485. When a client connects, it responds with an ACK message.
+* [ ] Server sends the initial game state to the client and the client renders it.
+* [ ] Client sends any user commands to the server and the server responds with the new state.
+* [ ] Server sends game state whenever it changes.
+* [ ] Client disconnects before quitting.
+* [ ] Server rejects connections while a session is active.
 
 ## Backlog
 
@@ -45,7 +62,6 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * Adding a second player / competitive play
 * Sounds / music
 * Title screen
-* Networked clients
 
 ## Glossary
 
@@ -55,3 +71,8 @@ When writing Tetris clones in the past, having a consistent name for everything 
 * A **cell** refers to any (row, col) coordinate in the grid. It can be empty or occupied by a brick.
 * A **brick** occupies a cell. It can be attached to the grid or part of the active piece moving around.
 * A **piece** is the collection of bricks a player controls. The arrangement of bricks is defined by the **shape** of the piece.
+
+### Discuss Next Pairing Session
+
+* Border being set to white for collision detection
+* Global vs. local iterator and fixing the crashes
