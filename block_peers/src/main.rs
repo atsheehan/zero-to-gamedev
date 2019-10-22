@@ -124,6 +124,31 @@ impl Grid {
             let idx = self.cell_index(cell);
             self.cells[idx] = Brick::Occupied(self.current_piece.image());
         }
+
+        self.clear_full_lines();
+    }
+
+    fn clear_full_lines(&mut self) {
+        let mut row = self.height - 1;
+
+        while row > 0 {
+            let mut full_line = true;
+            for col in 0..self.width {
+                full_line &= self.is_occupied(GridCell {
+                    col: col as i32,
+                    row: row as i32,
+                });
+            }
+
+            if full_line {
+                for col in 0..self.width {
+                    let index = row * self.width + col;
+                    self.cells[index as usize] = Brick::Animating(Image::SmokeBrick(0));
+                }
+            }
+
+            row -= 1;
+        }
     }
 
     fn update(&mut self) {
@@ -131,6 +156,27 @@ impl Grid {
 
         if self.drop_counter >= 100 {
             self.move_piece_down();
+        }
+
+        if self.drop_counter % 5 == 0 {
+            for cell in self.grid_iterator() {
+                let idx = self.cell_index(cell);
+                match self.cells[idx] {
+                    Brick::Animating(image) => match image {
+                        Image::SmokeBrick(frame) => {
+                            let next = frame + 1;
+                            if next < Image::max_smoke_frame() {
+                                self.cells[idx] = Brick::Animating(Image::SmokeBrick(next));
+                            } else {
+                                // Play 'poof' sound
+                                self.cells[idx] = Brick::FinishedAnimation;
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
         }
     }
 
@@ -145,7 +191,7 @@ impl Grid {
         for cell in self.grid_iterator() {
             let idx = self.cell_index(cell);
             match self.cells[idx] {
-                Brick::Occupied(image) => {
+                Brick::Occupied(image) | Brick::Animating(image) => {
                     self.render_brick(renderer, cell, image, Opacity::Opaque);
                 }
                 _ => {}

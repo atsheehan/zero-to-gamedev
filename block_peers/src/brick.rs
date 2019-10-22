@@ -72,6 +72,8 @@ impl Add<GridCell> for GridCell {
 pub enum Brick {
     Empty,
     Occupied(Image),
+    Animating(Image),
+    FinishedAnimation,
 }
 
 pub struct BrickIterator {

@@ -37,6 +37,10 @@ impl Image {
             }
         }
     }
+
+    pub fn max_smoke_frame() -> i32 {
+        12
+    }
 }
 
 /// Used to specify how opaque an image should be rendered.
