@@ -97,20 +97,20 @@ impl Grid {
         while !self.move_piece_down() {}
     }
 
+    fn in_bounds(&self, cell: GridCell) -> bool {
+        cell.col >= 0 && cell.col < self.width as i32 && cell.row >= 0 && cell.row < self.height as i32
+    }
+
+    fn is_occupied(&self, cell: GridCell) -> bool {
+        self.cells[self.cell_index(cell)]
+    }
+
+    fn cell_index(&self, cell: GridCell) -> usize {
+        (cell.row * self.width as i32 + cell.col) as usize
+    }
+
     fn does_piece_fit(&self, piece: &Piece) -> bool {
-        for cell in piece.global_iter() {
-            if cell.in_bounds(self.width as i32, self.height as i32) {
-                let grid_index = cell.row * self.width as i32 + cell.col;
-
-                if self.cells[grid_index as usize] {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        }
-
-        true
+        piece.global_iter().all(|cell| self.in_bounds(cell) && !self.is_occupied(cell))
     }
 
     fn grid_iterator(&self) -> BrickIterator {
