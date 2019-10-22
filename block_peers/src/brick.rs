@@ -1,6 +1,8 @@
 use std::convert::From;
 use std::ops::Add;
 
+use crate::render::Image;
+
 // --------
 // GridCell
 // --------
@@ -64,17 +66,25 @@ impl Add<GridCell> for GridCell {
 // Brick
 // -----
 
+/// Brick is used to represent the content in an (x, y) position on the 
+/// game grid.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Brick {
+    Empty,
+    Occupied(Image),
+}
+
 pub struct BrickIterator {
     origin: (i32, i32),
     num_columns: u32,
     num_rows: u32,
     current_col: i32,
     current_row: i32,
-    cells: Vec<bool>,
+    cells: Vec<Brick>,
 }
 
 impl BrickIterator {
-    pub fn new(origin: (i32, i32), num_columns: u32, num_rows: u32, cells: Vec<bool>) -> Self {
+    pub fn new(origin: (i32, i32), num_columns: u32, num_rows: u32, cells: Vec<Brick>) -> Self {
         BrickIterator {
             origin,
             num_columns,
@@ -95,15 +105,15 @@ impl Iterator for BrickIterator {
                 let index =
                     ((self.current_row * self.num_columns as i32) + self.current_col) as usize;
 
-                if self.cells[index] {
+                if self.cells[index] == Brick::Empty {
+                    self.current_col += 1;
+                } else {
                     let (col_offset, row_offset) = self.origin;
                     let col = self.current_col + col_offset;
                     let row = self.current_row + row_offset;
 
                     self.current_col += 1;
                     return Some(GridCell { col, row });
-                } else {
-                    self.current_col += 1;
                 }
             }
 

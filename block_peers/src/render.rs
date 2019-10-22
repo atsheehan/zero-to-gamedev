@@ -6,7 +6,7 @@ use std::path::Path;
 
 /// Which image to render when calling `render_image`. This module
 /// maps the image to the appropriate location in the larger texture.
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Image {
     RedBrick,
     GreenBrick,
