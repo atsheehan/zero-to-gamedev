@@ -4,20 +4,15 @@ extern crate rand;
 extern crate sdl2;
 extern crate simplelog;
 
-mod brick;
-mod grid;
-mod piece;
-mod render;
-mod util;
-
 // External
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::time::{Duration, Instant};
 
 // Internal
-use grid::Grid;
-use render::Renderer;
+use block_peers::grid::Grid;
+use block_peers::render::Renderer;
+use block_peers::util;
 
 // Constants
 const WINDOW_WIDTH: u32 = 800;
