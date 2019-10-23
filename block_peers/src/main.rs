@@ -17,7 +17,7 @@ use sdl2::rect::Rect;
 use std::time::{Duration, Instant};
 
 // Internal
-use brick::{BrickIterator, GridCell};
+use brick::{Brick, BrickIterator, GridCell};
 use piece::{random_next_piece, Piece};
 use render::{Image, Opacity, Renderer};
 
@@ -34,7 +34,7 @@ const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 struct Grid {
     height: u32,
     width: u32,
-    cells: Vec<bool>,
+    cells: Vec<Brick>,
     current_piece: Piece,
     drop_counter: u32,
 }
@@ -42,7 +42,7 @@ struct Grid {
 impl Grid {
     fn new(height: u32, width: u32) -> Self {
         let cell_count = height * width;
-        let cells = vec![false; cell_count as usize];
+        let cells = vec![Brick::Empty; cell_count as usize];
         // Move piece to right a bit to center it
         let current_piece = random_next_piece().move_right().move_right();
 
@@ -95,11 +95,14 @@ impl Grid {
     }
 
     fn in_bounds(&self, cell: GridCell) -> bool {
-        cell.col >= 0 && cell.col < self.width as i32 && cell.row >= 0 && cell.row < self.height as i32
+        cell.col >= 0
+            && cell.col < self.width as i32
+            && cell.row >= 0
+            && cell.row < self.height as i32
     }
 
     fn is_occupied(&self, cell: GridCell) -> bool {
-        self.cells[self.cell_index(cell)]
+        self.cells[self.cell_index(cell)] != Brick::Empty
     }
 
     fn cell_index(&self, cell: GridCell) -> usize {
@@ -107,7 +110,9 @@ impl Grid {
     }
 
     fn does_piece_fit(&self, piece: &Piece) -> bool {
-        piece.global_iter().all(|cell| self.in_bounds(cell) && !self.is_occupied(cell))
+        piece
+            .global_iter()
+            .all(|cell| self.in_bounds(cell) && !self.is_occupied(cell))
     }
 
     fn grid_iterator(&self) -> BrickIterator {
@@ -115,10 +120,9 @@ impl Grid {
     }
 
     fn attach_piece_to_grid(&mut self) {
-        for GridCell { row, col } in self.current_piece.global_iter() {
-            let grid_index = row * self.width as i32 + col;
-
-            self.cells[grid_index as usize] = true
+        for cell in self.current_piece.global_iter() {
+            let idx = self.cell_index(cell);
+            self.cells[idx] = Brick::Occupied(self.current_piece.image());
         }
     }
 
@@ -139,7 +143,13 @@ impl Grid {
 
         // Render occupied cells on the board
         for cell in self.grid_iterator() {
-            self.render_brick(renderer, cell, Opacity::Opaque);
+            let idx = self.cell_index(cell);
+            match self.cells[idx] {
+                Brick::Occupied(image) => {
+                    self.render_brick(renderer, cell, image, Opacity::Opaque);
+                }
+                _ => {}
+            }
         }
 
         // Render current piece
@@ -153,6 +163,7 @@ impl Grid {
             ghost_piece = next_ghost_piece;
             next_ghost_piece = ghost_piece.move_down();
         }
+
         self.render_piece(renderer, &ghost_piece, Opacity::Translucent(128));
     }
 
@@ -161,19 +172,25 @@ impl Grid {
             let x = col * CELL_SIZE as i32;
             let y = row * CELL_SIZE as i32;
             renderer.render_image(
-                Image::RedBrick,
+                piece.image(),
                 Rect::new(x, y, CELL_SIZE, CELL_SIZE),
                 opacity,
             );
         }
     }
 
-    fn render_brick(&self, renderer: &mut Renderer, cell: GridCell, opacity: Opacity) {
+    fn render_brick(
+        &self,
+        renderer: &mut Renderer,
+        cell: GridCell,
+        image: Image,
+        opacity: Opacity,
+    ) {
         let x = cell.col as u32 * CELL_SIZE;
         let y = cell.row as u32 * CELL_SIZE;
 
         renderer.render_image(
-            Image::RedBrick,
+            image,
             Rect::new(x as i32, y as i32, CELL_SIZE, CELL_SIZE),
             opacity,
         );
@@ -182,6 +199,7 @@ impl Grid {
 
 pub fn main() {
     // Subsystems Init
+    // Note: handles must stay in scope until end of program due to dropping.
     util::init_logging();
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -222,7 +240,6 @@ pub fn main() {
                     keycode: Some(Keycode::Q),
                     ..
                 } => break 'running,
-                // Handle other input here
                 Event::KeyDown {
                     keycode: Some(Keycode::A),
                     ..
