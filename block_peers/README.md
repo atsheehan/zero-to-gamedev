@@ -49,7 +49,7 @@ This will still be a single player game, but I think splitting client and server
 ### Story Breakdown
 
 * [x] Server process listens on UDP port 4485. When a client connects, it responds with an ACK message.
-* [ ] Server sends the initial game state to the client and the client renders it.
+* [x] Server sends the initial game state to the client and the client renders it.
 * [ ] Client sends any user commands to the server and the server responds with the new state.
 * [ ] Server sends game state whenever it changes.
 * [ ] Client disconnects before quitting.

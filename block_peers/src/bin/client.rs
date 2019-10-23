@@ -11,7 +11,6 @@ use std::net::{SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
 
 // Internal
-use block_peers::grid::Grid;
 use block_peers::net::{ClientMessage, ServerMessage};
 use block_peers::render::Renderer;
 use block_peers::util;
@@ -19,13 +18,14 @@ use block_peers::util;
 // Constants
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
-const GRID_HEIGHT: u32 = 20;
-const GRID_WIDTH: u32 = 10;
 const TICKS_PER_SECOND: u64 = 60;
 const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
 const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 
 pub fn main() {
+    util::init_logging();
+
+    // TODO: Abstract a bit/clean up
     let socket = UdpSocket::bind("0.0.0.0:0").expect("could not create a socket");
     let server_addr: SocketAddr = "127.0.0.1:4485".parse().unwrap();
 
@@ -37,18 +37,20 @@ pub fn main() {
     let (amount, source_addr) = socket.recv_from(&mut buffer).unwrap();
 
     let data = &buffer[..amount];
-    match bincode::deserialize(&data) {
-        Ok(ServerMessage::Ack) => {
-            println!("connected to server at {:?}", source_addr);
+
+    let mut grid = match bincode::deserialize(&data) {
+        Ok(ServerMessage::Ack { grid }) => {
+            debug!("connected to server at {:?}", source_addr);
+            grid
         }
         Err(_) => {
-            println!("received unknown message");
+            error!("received unknown message");
+            panic!("expected game state to be given from server on init")
         }
-    }
+    };
 
     // Subsystems Init
     // Note: handles must stay in scope until end of program due to dropping.
-    util::init_logging();
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let _image = sdl2::image::init(sdl2::image::InitFlag::PNG).unwrap();
@@ -73,10 +75,10 @@ pub fn main() {
     let mut ups = 0;
     let mut fps_timer = Instant::now();
 
-    // Game State
-    let mut grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
-
     'running: loop {
+        // Check network for events
+        
+        // Input 
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }

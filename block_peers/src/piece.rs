@@ -1,4 +1,5 @@
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 use crate::brick::GridCell;
 use crate::render::Image;
@@ -61,7 +62,7 @@ pub fn random_next_piece() -> Piece {
     Piece::new(idx)
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Piece {
     shape_idx: usize,
     rotation: Rotation,
@@ -194,7 +195,7 @@ impl Iterator for PieceIterator {
 // Rotation
 // --------
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 enum Rotation {
     Zero,
     Ninety,

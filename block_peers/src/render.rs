@@ -2,11 +2,12 @@ use sdl2::image::LoadTexture;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// Which image to render when calling `render_image`. This module
 /// maps the image to the appropriate location in the larger texture.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum Image {
     RedBrick,
     GreenBrick,

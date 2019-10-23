@@ -1,4 +1,6 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+
+use crate::grid::Grid;
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
@@ -11,9 +13,9 @@ impl ClientMessage {
     }
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum ServerMessage {
-    Ack,
+    Ack { grid: Grid },
 }
 
 impl ServerMessage {

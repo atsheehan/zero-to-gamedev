@@ -1,5 +1,6 @@
 use std::convert::From;
 use std::ops::Add;
+use serde::{Deserialize, Serialize};
 
 use crate::render::Image;
 
@@ -7,7 +8,7 @@ use crate::render::Image;
 // GridCell
 // --------
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub struct GridCell {
     pub col: i32,
     pub row: i32,
@@ -68,7 +69,7 @@ impl Add<GridCell> for GridCell {
 
 /// Brick is used to represent the content in an (x, y) position on the
 /// game grid.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum Brick {
     Empty,
     Occupied(Image),

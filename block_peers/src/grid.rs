@@ -1,5 +1,6 @@
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
+use serde::{Deserialize, Serialize};
 
 // Internal
 use crate::brick::{Brick, BrickIterator, GridCell};
@@ -8,6 +9,7 @@ use crate::render::{Image, Opacity, Renderer};
 
 const CELL_SIZE: u32 = 20;
 
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Grid {
     height: u32,
     width: u32,
