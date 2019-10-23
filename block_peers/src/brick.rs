@@ -66,7 +66,7 @@ impl Add<GridCell> for GridCell {
 // Brick
 // -----
 
-/// Brick is used to represent the content in an (x, y) position on the 
+/// Brick is used to represent the content in an (x, y) position on the
 /// game grid.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Brick {
