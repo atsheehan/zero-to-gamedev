@@ -14,7 +14,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
 
 // Internal
-use block_peers::net::{ClientMessage, ServerMessage};
+use block_peers::net::{ClientMessage, ServerMessage, Socket};
 use block_peers::render::Renderer;
 use block_peers::util;
 
@@ -31,7 +31,6 @@ const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
 pub fn main() {
     util::init_logging();
 
-    // TODO: Abstract a bit/clean up
     let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
@@ -55,20 +54,14 @@ pub fn main() {
         Err(_) => { panic!("specific host was not valid socket address") }
     };
 
-    let socket = UdpSocket::bind("0.0.0.0:0").expect("could not create a socket");
+    let mut socket = Socket::new().expect("could not open a new socket");
     let server_addr = SocketAddr::new(host, port);
+    socket
+        .send(server_addr, &ClientMessage::Connect)
+        .unwrap();
 
-    let message = ClientMessage::Connect;
-
-    socket.send_to(&message.into_bytes(), &server_addr).unwrap();
-
-    let mut buffer = [0; 1000];
-    let (amount, source_addr) = socket.recv_from(&mut buffer).unwrap();
-
-    let data = &buffer[..amount];
-
-    let mut grid = match bincode::deserialize(&data) {
-        Ok(ServerMessage::Ack { grid }) => {
+    let mut grid = match socket.receive::<ServerMessage>() {
+        Ok((source_addr, ServerMessage::Ack { grid })) => {
             debug!("connected to server at {:?}", source_addr);
             grid
         }
