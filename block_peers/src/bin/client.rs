@@ -34,31 +34,39 @@ pub fn main() {
     let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
-    opts.optopt("p", "port", "connect to server on specified port (default 4485)", "PORT");
-    opts.optopt("h", "host", "connect to host at specified address (default 127.0.0.1)", "HOST");
+    opts.optopt(
+        "p",
+        "port",
+        "connect to server on specified port (default 4485)",
+        "PORT",
+    );
+    opts.optopt(
+        "h",
+        "host",
+        "connect to host at specified address (default 127.0.0.1)",
+        "HOST",
+    );
 
     let matches = match opts.parse(&args[1..]) {
-        Ok(m) => { m },
-        Err(f) => { panic!(f.to_string()) }
+        Ok(m) => m,
+        Err(f) => panic!(f.to_string()),
     };
 
     let port: u16 = match matches.opt_get("port") {
-        Ok(Some(port)) => { port }
-        Ok(None) => { DEFAULT_PORT }
-        Err(_) => { panic!("specified port not valid") }
+        Ok(Some(port)) => port,
+        Ok(None) => DEFAULT_PORT,
+        Err(_) => panic!("specified port not valid"),
     };
 
     let host: IpAddr = match matches.opt_get("host") {
-        Ok(Some(host)) => { host }
-        Ok(None) => { DEFAULT_HOST }
-        Err(_) => { panic!("specific host was not valid socket address") }
+        Ok(Some(host)) => host,
+        Ok(None) => DEFAULT_HOST,
+        Err(_) => panic!("specific host was not valid socket address"),
     };
 
     let mut socket = Socket::new().expect("could not open a new socket");
     let server_addr = SocketAddr::new(host, port);
-    socket
-        .send(server_addr, &ClientMessage::Connect)
-        .unwrap();
+    socket.send(server_addr, &ClientMessage::Connect).unwrap();
 
     let mut grid = match socket.receive::<ServerMessage>() {
         Ok((source_addr, ServerMessage::Ack { grid })) => {
