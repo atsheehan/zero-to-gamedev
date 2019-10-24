@@ -103,6 +103,61 @@ impl Grid {
             let idx = self.cell_index(cell);
             self.cells[idx] = Brick::Occupied(self.current_piece.image());
         }
+        self.clear_full_lines();
+    }
+
+    fn clear_full_lines(&mut self) {
+        let mut row: i32 = self.height as i32 - 1;
+
+        while row >= 0 {
+            let mut full_line = true;
+            for col in 0..self.width {
+                let cell = GridCell {
+                    col: col as i32,
+                    row: row,
+                };
+                full_line &= self.is_occupied(cell);
+            }
+
+            if full_line {
+                for col in 0..self.width {
+                    let cell = GridCell {
+                        col: col as i32,
+                        row: row,
+                    };
+                    let idx = self.cell_index(cell);
+                    self.cells[idx] = Brick::Empty;
+                }
+                self.move_bricks_down(row - 1);
+            }
+
+            row -= 1;
+        }
+    }
+
+    fn move_bricks_down(&mut self, above_line: i32) {
+        let mut row: i32 = above_line;
+        while row >= 0 {
+            for col in 0..self.width {
+                let cell = GridCell {
+                    col: col as i32,
+                    row: row,
+                };
+                let new_cell = cell + GridCell { col: 0, row: 1 };
+
+                if self.in_bounds(new_cell) {
+                    let old_idx = self.cell_index(cell);
+                    let old_content = self.cells[old_idx];
+                    let idx = self.cell_index(new_cell);
+                    self.cells[idx] = old_content;
+                    self.cells[old_idx] = Brick::Empty;
+                }
+            }
+
+            row -= 1;
+        }
+
+        self.clear_full_lines();
     }
 
     pub fn update(&mut self) {
