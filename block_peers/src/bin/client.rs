@@ -1,3 +1,4 @@
+extern crate getopts;
 #[macro_use]
 extern crate log;
 extern crate rand;
@@ -5,8 +6,11 @@ extern crate sdl2;
 extern crate simplelog;
 
 // External
+use getopts::Options;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use std::env;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
 
 // Internal
@@ -21,12 +25,39 @@ const TICKS_PER_SECOND: u64 = 60;
 const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
 const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 
+const DEFAULT_PORT: u16 = 4485;
+const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+
 pub fn main() {
     util::init_logging();
 
+    let args: Vec<String> = env::args().collect();
+
+    let mut opts = Options::new();
+    opts.optopt("p", "port", "connect to server on specified port (default 4485)", "PORT");
+    opts.optopt("h", "host", "connect to host at specified address (default 127.0.0.1)", "HOST");
+
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => { m },
+        Err(f) => { panic!(f.to_string()) }
+    };
+
+    let port: u16 = match matches.opt_get("port") {
+        Ok(Some(port)) => { port }
+        Ok(None) => { DEFAULT_PORT }
+        Err(_) => { panic!("specified port not valid") }
+    };
+
+    let host: IpAddr = match matches.opt_get("host") {
+        Ok(Some(host)) => { host }
+        Ok(None) => { DEFAULT_HOST }
+        Err(_) => { panic!("specific host was not valid socket address") }
+    };
+
     let mut socket = Socket::new().expect("could not open a new socket");
+    let server_addr = SocketAddr::new(host, port);
     socket
-        .send("127.0.0.1:4485", &ClientMessage::Connect)
+        .send(server_addr, &ClientMessage::Connect)
         .unwrap();
 
     let mut grid = match socket.receive::<ServerMessage>() {
