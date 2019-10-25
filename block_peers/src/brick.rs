@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::ops::Add;
-use serde::{Deserialize, Serialize};
 
 use crate::render::Image;
 
@@ -73,6 +73,8 @@ impl Add<GridCell> for GridCell {
 pub enum Brick {
     Empty,
     Occupied(Image),
+    Animating(Image),
+    FinishedAnimation,
 }
 
 pub struct BrickIterator {

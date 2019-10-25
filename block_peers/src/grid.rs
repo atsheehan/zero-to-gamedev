@@ -126,9 +126,8 @@ impl Grid {
                         row: row,
                     };
                     let idx = self.cell_index(cell);
-                    self.cells[idx] = Brick::Empty;
+                    self.cells[idx] = Brick::Animating(Image::SmokeBrick(0));
                 }
-                self.move_bricks_down(row - 1);
             }
 
             row -= 1;
@@ -150,14 +149,11 @@ impl Grid {
                     let old_content = self.cells[old_idx];
                     let idx = self.cell_index(new_cell);
                     self.cells[idx] = old_content;
-                    self.cells[old_idx] = Brick::Empty;
                 }
             }
 
             row -= 1;
         }
-
-        self.clear_full_lines();
     }
 
     pub fn update(&mut self) {
@@ -165,6 +161,46 @@ impl Grid {
 
         if self.drop_counter >= 100 {
             self.move_piece_down();
+        }
+
+        for cell in self.grid_iterator() {
+            let idx = self.cell_index(cell);
+            match self.cells[idx] {
+                Brick::Animating(image) => match image {
+                    Image::SmokeBrick(frame) => {
+                        let next = frame + 1;
+                        if next < Image::max_smoke_frame() {
+                            self.cells[idx] = Brick::Animating(Image::SmokeBrick(next));
+                        } else {
+                            self.cells[idx] = Brick::FinishedAnimation;
+                        }
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+
+        let mut row: i32 = self.height as i32 - 1;
+
+        while row >= 0 {
+            let mut full_line = true;
+            for col in 0..self.width {
+                let cell = GridCell {
+                    col: col as i32,
+                    row: row,
+                };
+                let idx = self.cell_index(cell);
+                let is_smoke = self.cells[idx] == Brick::FinishedAnimation;
+
+                full_line &= self.is_occupied(cell) && is_smoke;
+            }
+
+            if full_line {
+                self.move_bricks_down(row - 1);
+            }
+
+            row -= 1;
         }
     }
 
@@ -179,7 +215,7 @@ impl Grid {
         for cell in self.grid_iterator() {
             let idx = self.cell_index(cell);
             match self.cells[idx] {
-                Brick::Occupied(image) => {
+                Brick::Occupied(image) | Brick::Animating(image) => {
                     self.render_brick(renderer, cell, image, Opacity::Opaque);
                 }
                 _ => {}
