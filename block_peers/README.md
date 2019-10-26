@@ -57,8 +57,7 @@ This will still be a single player game, but I think splitting client and server
 
 ## Backlog
 
-* Track lines cleared / points
-* Render textures
+* Track points
 * Adding a second player / competitive play
 * Sounds / music
 * Title screen
@@ -68,11 +67,6 @@ This will still be a single player game, but I think splitting client and server
 When writing Tetris clones in the past, having a consistent name for everything makes the process a lot easier.
 
 * A **grid** defines the main playing field where the player can move and rotate shapes.
-* A **cell** refers to any (row, col) coordinate in the grid. It can be empty or occupied by a brick.
+* A **grid_cell** refers to any (row, col) coordinate in the grid. It can be empty or occupied by a brick.
 * A **brick** occupies a cell. It can be attached to the grid or part of the active piece moving around.
 * A **piece** is the collection of bricks a player controls. The arrangement of bricks is defined by the **shape** of the piece.
-
-### Discuss Next Pairing Session
-
-* Border being set to white for collision detection
-* Global vs. local iterator and fixing the crashes
