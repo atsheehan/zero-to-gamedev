@@ -29,8 +29,8 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * [x] Proper collision detection on rotated pieces
 * [x] When a piece hits the ground it maintains its rotation
 * [x] When generating a new piece, any of the seven possible shapes can be chosen.
+* [x] After a piece is attached to the grid, any full lines are cleared out and bricks above the line are dropped down.
 * [ ] Add a 'center' functionality to a piece so it can be moved to correct starting point
-* [ ] After a piece is attached to the grid, any full lines are cleared out and bricks above the line are dropped down.
 * [ ] If a new piece is generated on top of an occupied cell, the game is over.
 
 ## Iteration 2 - Networked Client
