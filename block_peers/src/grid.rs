@@ -98,8 +98,11 @@ impl Grid {
         BrickIterator::new((0, 0), self.width, self.height, self.cells.clone())
     }
 
-    fn line_iterator(&self) -> LineIterator {
-        LineIterator::new(self.width, self.height)
+    fn line_iterator<CB>(&self, callback: CB) -> LineIterator<CB>
+    where
+        CB: FnMut(GridCell, Brick) -> bool,
+    {
+        LineIterator::new(self.cells.clone(), self.width, self.height, callback)
     }
 
     fn attach_piece_to_grid(&mut self) {
@@ -111,25 +114,10 @@ impl Grid {
     }
 
     fn animate_full_lines(&mut self) {
-        for row in (0..self.height).into_iter().rev() {
-            let mut full_line = true;
-            for col in 0..self.width {
-                let cell = GridCell {
-                    col: col as i32,
-                    row: row as i32,
-                };
-                full_line &= self.is_occupied(cell);
-            }
-
-            if full_line {
-                for col in 0..self.width {
-                    let cell = GridCell {
-                        col: col as i32,
-                        row: row as i32,
-                    };
-                    let idx = self.cell_index(cell);
-                    self.cells[idx] = Brick::Animating(Image::SmokeBrick(0));
-                }
+        for line in self.line_iterator(|_, brick| brick != Brick::Empty) {
+            for cell in line {
+                let idx = self.cell_index(cell);
+                self.cells[idx] = Brick::Animating(Image::SmokeBrick(0));
             }
         }
     }
@@ -154,34 +142,22 @@ impl Grid {
     }
 
     pub fn update(&mut self) {
+        // Handle continuous dropping
         self.drop_counter += 1;
-
         if self.drop_counter >= 100 {
             self.move_piece_down();
         }
 
+        // Iterate any outstanding animations
         for cell in self.grid_iterator() {
             let idx = self.cell_index(cell);
             let next = self.cells[idx].next_animation();
             self.cells[idx] = next;
         }
 
-        for row in (0..self.height).into_iter().rev() {
-            let mut full_line = true;
-            for col in 0..self.width {
-                let cell = GridCell {
-                    col: col as i32,
-                    row: row as i32,
-                };
-                let idx = self.cell_index(cell);
-                let is_smoke = self.cells[idx] == Brick::FinishedAnimation;
-
-                full_line &= self.is_occupied(cell) && is_smoke;
-            }
-
-            if full_line {
-                self.move_bricks_down(row as i32);
-            }
+        // Clear finished animations
+        for line in self.line_iterator(|_, brick| brick == Brick::FinishedAnimation) {
+            self.move_bricks_down(line[0].row);
         }
     }
 

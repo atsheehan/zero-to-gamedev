@@ -149,44 +149,69 @@ impl Iterator for BrickIterator {
     }
 }
 
-pub struct LineIterator {
+pub struct LineIterator<CB>
+where
+    CB: FnMut(GridCell, Brick) -> bool,
+{
+    cells: Vec<Brick>,
     num_columns: u32,
     num_rows: u32,
     current_col: i32,
     current_row: i32,
+    callback: CB,
 }
 
-impl LineIterator {
-    pub fn new(num_columns: u32, num_rows: u32) -> Self {
+impl<CB> LineIterator<CB>
+where
+    CB: FnMut(GridCell, Brick) -> bool,
+{
+    pub fn new(cells: Vec<Brick>, num_columns: u32, num_rows: u32, callback: CB) -> Self {
         Self {
+            cells,
             num_columns,
             num_rows,
             current_col: 0,
             current_row: 0,
+            callback,
         }
     }
 }
 
-impl Iterator for LineIterator {
+impl<CB> Iterator for LineIterator<CB>
+where
+    CB: FnMut(GridCell, Brick) -> bool,
+{
     type Item = Vec<GridCell>;
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.current_row < self.num_rows as i32 {
-            let mut line = Vec::new();
+            let mut all_true = true;
+            let mut grid_cells = Vec::new();
 
             while self.current_col < self.num_columns as i32 {
-                let cell = GridCell {
+                let index =
+                    ((self.current_row * self.num_columns as i32) + self.current_col) as usize;
+
+                let grid_cell = GridCell {
                     col: self.current_col,
                     row: self.current_row,
                 };
-                line.push(cell);
+                grid_cells.push(grid_cell);
+
+                let brick = self.cells[index].clone();
+
+                all_true &= (self.callback)(grid_cell, brick);
                 self.current_col += 1;
             }
 
             self.current_row += 1;
             self.current_col = 0;
-            return Some(line);
+
+            if all_true {
+                return Some(grid_cells);
+            }
         }
+
         None
     }
 }
