@@ -3,7 +3,7 @@ use sdl2::rect::Rect;
 use serde::{Deserialize, Serialize};
 
 // Internal
-use crate::brick::{Brick, BrickIterator, GridCell};
+use crate::brick::{Brick, BrickIterator, GridCell, LineIterator};
 use crate::piece::{random_next_piece, Piece};
 use crate::render::{Image, Opacity, Renderer};
 
@@ -98,23 +98,25 @@ impl Grid {
         BrickIterator::new((0, 0), self.width, self.height, self.cells.clone())
     }
 
+    fn line_iterator(&self) -> LineIterator {
+        LineIterator::new(self.width, self.height)
+    }
+
     fn attach_piece_to_grid(&mut self) {
         for cell in self.current_piece.global_iter() {
             let idx = self.cell_index(cell);
             self.cells[idx] = Brick::Occupied(self.current_piece.image());
         }
-        self.clear_full_lines();
+        self.animate_full_lines();
     }
 
-    fn clear_full_lines(&mut self) {
-        let mut row: i32 = self.height as i32 - 1;
-
-        while row >= 0 {
+    fn animate_full_lines(&mut self) {
+        for row in (0..self.height).into_iter().rev() {
             let mut full_line = true;
             for col in 0..self.width {
                 let cell = GridCell {
                     col: col as i32,
-                    row: row,
+                    row: row as i32,
                 };
                 full_line &= self.is_occupied(cell);
             }
@@ -123,20 +125,17 @@ impl Grid {
                 for col in 0..self.width {
                     let cell = GridCell {
                         col: col as i32,
-                        row: row,
+                        row: row as i32,
                     };
                     let idx = self.cell_index(cell);
                     self.cells[idx] = Brick::Animating(Image::SmokeBrick(0));
                 }
             }
-
-            row -= 1;
         }
     }
 
-    fn move_bricks_down(&mut self, above_line: i32) {
-        let mut row: i32 = above_line;
-        while row >= 0 {
+    fn move_bricks_down(&mut self, line: i32) {
+        for row in (0..line).into_iter().rev() {
             for col in 0..self.width {
                 let cell = GridCell {
                     col: col as i32,
@@ -151,8 +150,6 @@ impl Grid {
                     self.cells[idx] = old_content;
                 }
             }
-
-            row -= 1;
         }
     }
 
@@ -165,30 +162,16 @@ impl Grid {
 
         for cell in self.grid_iterator() {
             let idx = self.cell_index(cell);
-            match self.cells[idx] {
-                Brick::Animating(image) => match image {
-                    Image::SmokeBrick(frame) => {
-                        let next = frame + 1;
-                        if next < Image::max_smoke_frame() {
-                            self.cells[idx] = Brick::Animating(Image::SmokeBrick(next));
-                        } else {
-                            self.cells[idx] = Brick::FinishedAnimation;
-                        }
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
+            let next = self.cells[idx].next_animation();
+            self.cells[idx] = next;
         }
 
-        let mut row: i32 = self.height as i32 - 1;
-
-        while row >= 0 {
+        for row in (0..self.height).into_iter().rev() {
             let mut full_line = true;
             for col in 0..self.width {
                 let cell = GridCell {
                     col: col as i32,
-                    row: row,
+                    row: row as i32,
                 };
                 let idx = self.cell_index(cell);
                 let is_smoke = self.cells[idx] == Brick::FinishedAnimation;
@@ -197,10 +180,8 @@ impl Grid {
             }
 
             if full_line {
-                self.move_bricks_down(row - 1);
+                self.move_bricks_down(row as i32);
             }
-
-            row -= 1;
         }
     }
 

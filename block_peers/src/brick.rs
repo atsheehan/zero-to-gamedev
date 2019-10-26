@@ -77,6 +77,27 @@ pub enum Brick {
     FinishedAnimation,
 }
 
+impl Brick {
+    pub fn next_animation(self) -> Brick {
+        match self {
+            Brick::Empty => self,
+            Brick::Occupied(_) => self,
+            Brick::FinishedAnimation => self,
+            Brick::Animating(image) => match image {
+                Image::SmokeBrick(frame) => {
+                    let next = frame + 1;
+                    if next < Image::max_smoke_frame() {
+                        Brick::Animating(Image::SmokeBrick(next))
+                    } else {
+                        Brick::FinishedAnimation
+                    }
+                }
+                _ => self,
+            },
+        }
+    }
+}
+
 pub struct BrickIterator {
     origin: (i32, i32),
     num_columns: u32,
@@ -124,6 +145,48 @@ impl Iterator for BrickIterator {
             self.current_col = 0;
         }
 
+        None
+    }
+}
+
+pub struct LineIterator {
+    num_columns: u32,
+    num_rows: u32,
+    current_col: i32,
+    current_row: i32,
+}
+
+impl LineIterator {
+    pub fn new(num_columns: u32, num_rows: u32) -> Self {
+        Self {
+            num_columns,
+            num_rows,
+            current_col: 0,
+            current_row: 0,
+        }
+    }
+}
+
+impl Iterator for LineIterator {
+    type Item = Vec<GridCell>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.current_row < self.num_rows as i32 {
+            let mut line = Vec::new();
+
+            while self.current_col < self.num_columns as i32 {
+                let cell = GridCell {
+                    col: self.current_col,
+                    row: self.current_row,
+                };
+                line.push(cell);
+                self.current_col += 1;
+            }
+
+            self.current_row += 1;
+            self.current_col = 0;
+            return Some(line);
+        }
         None
     }
 }
