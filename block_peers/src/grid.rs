@@ -3,7 +3,7 @@ use sdl2::rect::Rect;
 use serde::{Deserialize, Serialize};
 
 // Internal
-use crate::brick::{Brick, BrickIterator, GridCell, LineIterator};
+use crate::brick::{Brick, BrickIterator, GridCell, LineIterator, MatchingLine};
 use crate::piece::{random_next_piece, Piece};
 use crate::render::{Image, Opacity, Renderer};
 
@@ -98,7 +98,7 @@ impl Grid {
         BrickIterator::new((0, 0), self.width, self.height, self.cells.clone())
     }
 
-    fn line_iterator<CB>(&self, callback: CB) -> LineIterator<CB>
+    fn lines_matching<CB>(&self, callback: CB) -> LineIterator<CB>
     where
         CB: FnMut(GridCell, Brick) -> bool,
     {
@@ -114,8 +114,8 @@ impl Grid {
     }
 
     fn animate_full_lines(&mut self) {
-        for line in self.line_iterator(|_, brick| brick != Brick::Empty) {
-            for cell in line {
+        for MatchingLine { cells, .. } in self.lines_matching(|_, brick| brick != Brick::Empty) {
+            for cell in cells {
                 let idx = self.cell_index(cell);
                 self.cells[idx] = Brick::Animating(Image::SmokeBrick(0));
             }
@@ -148,16 +148,19 @@ impl Grid {
             self.move_piece_down();
         }
 
-        // Iterate any outstanding animations
+        // Increment any outstanding animations
         for cell in self.grid_iterator() {
             let idx = self.cell_index(cell);
-            let next = self.cells[idx].next_animation();
-            self.cells[idx] = next;
+            if let Some(next) = self.cells[idx].next_animation() {
+                self.cells[idx] = next;
+            }
         }
 
         // Clear finished animations
-        for line in self.line_iterator(|_, brick| brick == Brick::FinishedAnimation) {
-            self.move_bricks_down(line[0].row);
+        for MatchingLine { row, .. } in
+            self.lines_matching(|_, brick| brick == Brick::FinishedAnimation)
+        {
+            self.move_bricks_down(row as i32);
         }
     }
 

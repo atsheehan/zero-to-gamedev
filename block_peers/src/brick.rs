@@ -78,22 +78,20 @@ pub enum Brick {
 }
 
 impl Brick {
-    pub fn next_animation(self) -> Brick {
+    pub fn next_animation(self) -> Option<Brick> {
         match self {
-            Brick::Empty => self,
-            Brick::Occupied(_) => self,
-            Brick::FinishedAnimation => self,
             Brick::Animating(image) => match image {
                 Image::SmokeBrick(frame) => {
                     let next = frame + 1;
                     if next < Image::max_smoke_frame() {
-                        Brick::Animating(Image::SmokeBrick(next))
+                        Some(Brick::Animating(Image::SmokeBrick(next)))
                     } else {
-                        Brick::FinishedAnimation
+                        Some(Brick::FinishedAnimation)
                     }
                 }
-                _ => self,
+                _ => None,
             },
+            _ => None,
         }
     }
 }
@@ -149,6 +147,11 @@ impl Iterator for BrickIterator {
     }
 }
 
+pub struct MatchingLine {
+    pub cells: Vec<GridCell>,
+    pub row: u32,
+}
+
 pub struct LineIterator<CB>
 where
     CB: FnMut(GridCell, Brick) -> bool,
@@ -181,7 +184,7 @@ impl<CB> Iterator for LineIterator<CB>
 where
     CB: FnMut(GridCell, Brick) -> bool,
 {
-    type Item = Vec<GridCell>;
+    type Item = MatchingLine;
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.current_row < self.num_rows as i32 {
@@ -204,11 +207,15 @@ where
                 self.current_col += 1;
             }
 
+            let row = self.current_row as u32;
             self.current_row += 1;
             self.current_col = 0;
 
             if all_true {
-                return Some(grid_cells);
+                return Some(MatchingLine {
+                    row,
+                    cells: grid_cells,
+                });
             }
         }
 
