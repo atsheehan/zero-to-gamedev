@@ -100,7 +100,7 @@ impl Grid {
 
     fn lines_matching<CB>(&self, callback: CB) -> LineIterator<CB>
     where
-        CB: FnMut(GridCell, Brick) -> bool,
+        CB: Fn(GridCell, Brick) -> bool,
     {
         LineIterator::new(self.cells.clone(), self.width, self.height, callback)
     }

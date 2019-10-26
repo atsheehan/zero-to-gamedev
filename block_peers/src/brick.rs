@@ -154,7 +154,7 @@ pub struct MatchingLine {
 
 pub struct LineIterator<CB>
 where
-    CB: FnMut(GridCell, Brick) -> bool,
+    CB: Fn(GridCell, Brick) -> bool,
 {
     cells: Vec<Brick>,
     num_columns: u32,
@@ -166,7 +166,7 @@ where
 
 impl<CB> LineIterator<CB>
 where
-    CB: FnMut(GridCell, Brick) -> bool,
+    CB: Fn(GridCell, Brick) -> bool,
 {
     pub fn new(cells: Vec<Brick>, num_columns: u32, num_rows: u32, callback: CB) -> Self {
         Self {
@@ -182,7 +182,7 @@ where
 
 impl<CB> Iterator for LineIterator<CB>
 where
-    CB: FnMut(GridCell, Brick) -> bool,
+    CB: Fn(GridCell, Brick) -> bool,
 {
     type Item = MatchingLine;
 
