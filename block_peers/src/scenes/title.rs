@@ -38,7 +38,7 @@ impl Scene for TitleScene {
     fn input(self: Box<Self>, event: Event) -> Box<dyn Scene> {
         match event {
             Event::KeyDown {
-                keycode: Some(Keycode::Return),
+                keycode: Some(Keycode::Space),
                 ..
             } => Box::new(GameScene::new(self.server_state)),
 
@@ -48,6 +48,8 @@ impl Scene for TitleScene {
 
     fn render(&self, renderer: &mut Renderer) {
         self.ai.render(renderer);
+        renderer.render_title(180, 200);
+        renderer.render_space(350, 320);
     }
 
     fn update(&mut self) -> Option<Box<dyn Scene>> {
