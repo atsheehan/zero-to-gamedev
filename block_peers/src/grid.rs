@@ -151,13 +151,13 @@ impl Grid {
         // Increment any outstanding animations
         for cell in self.grid_iterator() {
             let idx = self.cell_index(cell);
-            if let Some(next) = self.cells[idx].next_animation() {
+            if let Some(next) = self.cells[idx].break_brick() {
                 self.cells[idx] = next;
             }
         }
 
         // Clear finished animations
-        for MatchingLine { row, .. } in self.lines_matching(|_, brick| brick == Brick::Broken) {
+        for MatchingLine { row, .. } in self.lines_matching(|_, brick| brick.is_broken()) {
             self.move_bricks_down(row as i32);
         }
     }

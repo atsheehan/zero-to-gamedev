@@ -90,7 +90,7 @@ pub enum Brick {
 }
 
 impl Brick {
-    pub fn next_animation(self) -> Option<Brick> {
+    pub fn break_brick(self) -> Option<Brick> {
         match self {
             Brick::Breaking(frame) => {
                 let next = frame + 1;
@@ -101,6 +101,13 @@ impl Brick {
                 }
             }
             _ => None,
+        }
+    }
+
+    pub fn is_broken(&self) -> bool {
+        match self {
+            Brick::Broken => true,
+            _ => false,
         }
     }
 }
