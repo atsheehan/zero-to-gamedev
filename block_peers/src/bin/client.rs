@@ -89,7 +89,7 @@ pub fn main() {
 
     // Draw
     let window = video_subsystem
-        .window("Block Peers", WINDOW_WIDTH, WINDOW_HEIGHT)
+        .window("Block Wars", WINDOW_WIDTH, WINDOW_HEIGHT)
         .position_centered()
         .resizable()
         .opengl()
