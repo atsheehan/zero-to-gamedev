@@ -139,6 +139,29 @@ impl Grid {
 }
 
 // ------------
+// Title Screen
+// ------------
+//
+// These methods are only for convenience in creating the menu title screen animation.
+// Avoid using them in the 'real' game.
+impl Grid {
+    pub fn place_piece_at_bottom(&mut self, piece: Piece) {
+        let mut piece = piece;
+        let mut next = piece.move_down();
+
+        while self.does_piece_fit(&next) {
+            piece = next;
+            next = piece.move_down();
+        }
+
+        for cell in piece.global_iter() {
+            let idx = self.cell_index(cell);
+            self.cells[idx] = Brick::Occupied(piece.brick_type());
+        }
+    }
+}
+
+// ------------
 // Private Grid
 // ------------
 impl Grid {

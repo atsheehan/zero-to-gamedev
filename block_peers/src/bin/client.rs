@@ -70,7 +70,7 @@ pub fn main() {
     let server_addr = SocketAddr::new(host, port);
     socket.send(server_addr, &ClientMessage::Connect).unwrap();
 
-    let grid = match socket.receive::<ServerMessage>() {
+    let server_state = match socket.receive::<ServerMessage>() {
         Ok((source_addr, ServerMessage::Ack { grid })) => {
             debug!("connected to server at {:?}", source_addr);
             grid
@@ -108,7 +108,7 @@ pub fn main() {
     let mut fps_timer = Instant::now();
 
     // Scene
-    let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(grid));
+    let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_state, renderer.size()));
 
     'running: loop {
         // Check network for events

@@ -3,7 +3,8 @@ use sdl2::keyboard::Keycode;
 
 use super::game::GameScene;
 use crate::grid::Grid;
-use crate::render::Renderer;
+use crate::piece::Piece;
+use crate::render::{Renderer, WindowSize};
 use crate::scene::Scene;
 
 pub struct TitleScene {
@@ -12,10 +13,22 @@ pub struct TitleScene {
 }
 
 impl TitleScene {
-    pub fn new(grid: Grid) -> Self {
+    pub fn new(grid: Grid, size: WindowSize) -> Self {
+        let width = size.width / 20;
+        let height = size.height / 20;
+        let mut background_grid = Grid::new(height, width);
+
+        // Set some pieces on the board
+        background_grid.place_piece_at_bottom(Piece::new(6).move_left());
+        background_grid.place_piece_at_bottom(Piece::new(0).rotate().rotate().move_right_times(2));
+        background_grid.place_piece_at_bottom(Piece::new(2));
+        background_grid.place_piece_at_bottom(Piece::new(2).move_right_times(4));
+        background_grid.place_piece_at_bottom(Piece::new(4).move_right_times(2));
+        background_grid.place_piece_at_bottom(Piece::new(1).rotate().move_right_times(8));
+
         Self {
             server_state: grid,
-            background_grid: Grid::new(40, 40),
+            background_grid,
         }
     }
 }
@@ -37,6 +50,8 @@ impl Scene for TitleScene {
     }
 
     fn update(&mut self) -> Option<Box<dyn Scene>> {
+        self.background_grid.update();
+
         None
     }
 }

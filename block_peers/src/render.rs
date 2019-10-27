@@ -77,17 +77,35 @@ impl Opacity {
 
 pub struct Renderer {
     canvas: WindowCanvas,
-    texture: Texture,
+    pieces: Texture,
+}
+
+#[derive(Debug)]
+pub struct WindowSize {
+    pub width: u32,
+    pub height: u32,
 }
 
 impl Renderer {
     pub fn new(canvas: WindowCanvas) -> Self {
         let texture_creator = canvas.texture_creator();
-        let texture = texture_creator
+        let pieces = texture_creator
             .load_texture(Path::new("assets/tiles.png"))
             .unwrap();
 
-        Self { canvas, texture }
+        Self { canvas, pieces }
+    }
+
+    pub fn size(&self) -> WindowSize {
+        let result = self
+            .canvas
+            .output_size()
+            .expect("unable to determine window size of canvas");
+
+        WindowSize {
+            width: result.0,
+            height: result.1,
+        }
     }
 
     pub fn clear(&mut self) {
@@ -105,9 +123,9 @@ impl Renderer {
     }
 
     pub fn render_image(&mut self, image: Image, dest_rect: Rect, opacity: Opacity) {
-        self.texture.set_alpha_mod(opacity.alpha());
+        self.pieces.set_alpha_mod(opacity.alpha());
         self.canvas
-            .copy(&self.texture, image.source_rect(), dest_rect)
+            .copy(&self.pieces, image.source_rect(), dest_rect)
             .expect("failed to render image");
     }
 }
