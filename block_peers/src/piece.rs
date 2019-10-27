@@ -128,6 +128,18 @@ impl Piece {
         }
     }
 
+    pub fn center(&self, width: u32) -> Self {
+        let col = (width - 4) / 2;
+        Self {
+            shape_idx: self.shape_idx,
+            rotation: self.rotation,
+            position: GridCell {
+                col: col as i32,
+                row: self.position.row,
+            },
+        }
+    }
+
     /// `global_iter` provides the (col, row) of occupied bricks inside the "global"
     /// grid context of a PieceShape taking the current rotation and the pieces
     /// origin into consideration.

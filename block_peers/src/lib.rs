@@ -1,3 +1,4 @@
+pub mod ai;
 pub mod brick;
 pub mod grid;
 pub mod logging;

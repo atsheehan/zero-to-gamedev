@@ -26,8 +26,7 @@ impl Grid {
     pub fn new(height: u32, width: u32) -> Self {
         let cell_count = height * width;
         let cells = vec![Brick::Empty; cell_count as usize];
-        // Move piece to right a bit to center it
-        let current_piece = random_next_piece().move_right().move_right();
+        let current_piece = random_next_piece().center(width);
 
         Self {
             height,
@@ -166,9 +165,9 @@ impl Grid {
 // ------------
 impl Grid {
     fn spawn_next_piece(&mut self) {
-        let next_piece = random_next_piece().move_right().move_right();
+        let next_piece = random_next_piece().center(self.width);
         if self.does_piece_fit(&next_piece) {
-            self.current_piece = random_next_piece().move_right().move_right();
+            self.current_piece = random_next_piece().center(self.width);
         } else {
             self.gameover = true;
         }

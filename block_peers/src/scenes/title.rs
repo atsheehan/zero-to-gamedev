@@ -2,6 +2,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
 use super::game::GameScene;
+use crate::ai::DumbAI;
 use crate::grid::Grid;
 use crate::piece::Piece;
 use crate::render::{Renderer, WindowSize};
@@ -9,7 +10,7 @@ use crate::scene::Scene;
 
 pub struct TitleScene {
     server_state: Grid,
-    background_grid: Grid,
+    ai: DumbAI,
 }
 
 impl TitleScene {
@@ -28,7 +29,7 @@ impl TitleScene {
 
         Self {
             server_state: grid,
-            background_grid,
+            ai: DumbAI::new(background_grid),
         }
     }
 }
@@ -46,11 +47,11 @@ impl Scene for TitleScene {
     }
 
     fn render(&self, renderer: &mut Renderer) {
-        self.background_grid.render(renderer);
+        self.ai.render(renderer);
     }
 
     fn update(&mut self) -> Option<Box<dyn Scene>> {
-        self.background_grid.update();
+        self.ai.update();
 
         None
     }
