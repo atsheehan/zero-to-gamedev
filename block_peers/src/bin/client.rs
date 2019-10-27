@@ -1,6 +1,6 @@
-extern crate getopts;
 #[macro_use]
 extern crate log;
+extern crate getopts;
 extern crate rand;
 extern crate sdl2;
 extern crate simplelog;
@@ -17,7 +17,8 @@ use std::time::{Duration, Instant};
 use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 use block_peers::render::Renderer;
-use block_peers::scene::{Scene, TitleScene};
+use block_peers::scene::Scene;
+use block_peers::scenes::TitleScene;
 
 // Constants
 const WINDOW_WIDTH: u32 = 800;
@@ -69,7 +70,7 @@ pub fn main() {
     let server_addr = SocketAddr::new(host, port);
     socket.send(server_addr, &ClientMessage::Connect).unwrap();
 
-    let mut grid = match socket.receive::<ServerMessage>() {
+    let grid = match socket.receive::<ServerMessage>() {
         Ok((source_addr, ServerMessage::Ack { grid })) => {
             debug!("connected to server at {:?}", source_addr);
             grid
@@ -130,19 +131,21 @@ pub fn main() {
             }
         }
 
+        // Update
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            scene.update();
+            if let Some(next) = scene.update() {
+                scene = next;
+            }
             previous_instant += tick_duration;
             ups += 1;
         }
 
+        // Render
         renderer.clear();
         scene.render(&mut renderer);
 
-        // Render world here
         fps += 1;
-
         if fps_timer.elapsed().as_millis() >= 1000 {
             debug!("fps {} ups {}", fps, ups);
             fps = 0;
