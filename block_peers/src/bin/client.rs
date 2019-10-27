@@ -14,9 +14,9 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
 // Internal
+use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 use block_peers::render::Renderer;
-use block_peers::util;
 
 // Constants
 const WINDOW_WIDTH: u32 = 800;
@@ -29,7 +29,7 @@ const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
 
 pub fn main() {
-    util::init_logging();
+    logging::init();
 
     let args: Vec<String> = env::args().collect();
 
@@ -106,6 +106,9 @@ pub fn main() {
     let mut fps_timer = Instant::now();
 
     'running: loop {
+        if grid.gameover {
+            break 'running;
+        }
         // Check network for events
 
         // Input
