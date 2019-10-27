@@ -67,30 +67,39 @@ impl Add<GridCell> for GridCell {
 // Brick
 // -----
 
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+pub enum BrickType {
+    Red,
+    Green,
+    Blue,
+    Yellow,
+    Orange,
+    Purple,
+    Teal,
+    Smoke(u32),
+}
+
 /// Brick is used to represent the content in an (x, y) position on the
 /// game grid.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum Brick {
     Empty,
-    Occupied(Image),
-    Animating(Image),
-    FinishedAnimation,
+    Occupied(BrickType),
+    Breaking(u32),
+    Broken,
 }
 
 impl Brick {
     pub fn next_animation(self) -> Option<Brick> {
         match self {
-            Brick::Animating(image) => match image {
-                Image::SmokeBrick(frame) => {
-                    let next = frame + 1;
-                    if next < Image::max_smoke_frame() {
-                        Some(Brick::Animating(Image::SmokeBrick(next)))
-                    } else {
-                        Some(Brick::FinishedAnimation)
-                    }
+            Brick::Breaking(frame) => {
+                let next = frame + 1;
+                if next < Image::max_smoke_frame() {
+                    Some(Brick::Breaking(next))
+                } else {
+                    Some(Brick::Broken)
                 }
-                _ => None,
-            },
+            }
             _ => None,
         }
     }

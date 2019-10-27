@@ -1,7 +1,7 @@
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use crate::brick::GridCell;
+use crate::brick::{BrickType, GridCell};
 use crate::render::Image;
 
 // --------
@@ -71,15 +71,20 @@ pub struct Piece {
 
 impl Piece {
     pub fn image(&self) -> Image {
+        Image::from_brick_type(self.brick_type())
+    }
+
+    pub fn brick_type(&self) -> BrickType {
+        use BrickType::*;
         match self.shape_idx {
-            0 => Image::RedBrick,
-            1 => Image::GreenBrick,
-            2 => Image::BlueBrick,
-            3 => Image::YellowBrick,
-            4 => Image::OrangeBrick,
-            5 => Image::PurpleBrick,
-            6 => Image::TealBrick,
-            _ => Image::SmokeBrick(0),
+            0 => Red,
+            1 => Green,
+            2 => Blue,
+            3 => Yellow,
+            4 => Orange,
+            5 => Purple,
+            6 => Teal,
+            _ => Smoke(0),
         }
     }
 

@@ -3,7 +3,7 @@ use sdl2::rect::Rect;
 use serde::{Deserialize, Serialize};
 
 // Internal
-use crate::brick::{Brick, BrickIterator, GridCell, LineIterator, MatchingLine};
+use crate::brick::{Brick, BrickIterator, BrickType, GridCell, LineIterator, MatchingLine};
 use crate::piece::{random_next_piece, Piece};
 use crate::render::{Image, Opacity, Renderer};
 
@@ -108,7 +108,7 @@ impl Grid {
     fn attach_piece_to_grid(&mut self) {
         for cell in self.current_piece.global_iter() {
             let idx = self.cell_index(cell);
-            self.cells[idx] = Brick::Occupied(self.current_piece.image());
+            self.cells[idx] = Brick::Occupied(self.current_piece.brick_type());
         }
         self.animate_full_lines();
     }
@@ -117,7 +117,7 @@ impl Grid {
         for MatchingLine { cells, .. } in self.lines_matching(|_, brick| brick != Brick::Empty) {
             for cell in cells {
                 let idx = self.cell_index(cell);
-                self.cells[idx] = Brick::Animating(Image::SmokeBrick(0));
+                self.cells[idx] = Brick::Breaking(0);
             }
         }
     }
@@ -157,9 +157,7 @@ impl Grid {
         }
 
         // Clear finished animations
-        for MatchingLine { row, .. } in
-            self.lines_matching(|_, brick| brick == Brick::FinishedAnimation)
-        {
+        for MatchingLine { row, .. } in self.lines_matching(|_, brick| brick == Brick::Broken) {
             self.move_bricks_down(row as i32);
         }
     }
@@ -175,7 +173,12 @@ impl Grid {
         for cell in self.grid_iterator() {
             let idx = self.cell_index(cell);
             match self.cells[idx] {
-                Brick::Occupied(image) | Brick::Animating(image) => {
+                Brick::Occupied(brick_type) => {
+                    let image = Image::from_brick_type(brick_type);
+                    self.render_brick(renderer, cell, image, Opacity::Opaque);
+                }
+                Brick::Breaking(frame) => {
+                    let image = Image::from_brick_type(BrickType::Smoke(frame));
                     self.render_brick(renderer, cell, image, Opacity::Opaque);
                 }
                 _ => {}

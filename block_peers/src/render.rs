@@ -5,6 +5,8 @@ use sdl2::render::{Texture, WindowCanvas};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+use crate::brick::BrickType;
+
 /// Which image to render when calling `render_image`. This module
 /// maps the image to the appropriate location in the larger texture.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
@@ -16,7 +18,7 @@ pub enum Image {
     OrangeBrick,
     PurpleBrick,
     TealBrick,
-    SmokeBrick(i32),
+    SmokeBrick(u32),
 }
 
 impl Image {
@@ -33,14 +35,27 @@ impl Image {
                 if frame > 12 {
                     panic!("unavailable smoke brick, greatest index is 12")
                 }
-                let x = frame * 32;
-                Rect::new(x, 32, 32, 32)
+                Rect::new((frame * 32) as i32, 32, 32, 32)
             }
         }
     }
 
-    pub fn max_smoke_frame() -> i32 {
+    pub fn max_smoke_frame() -> u32 {
         12
+    }
+
+    pub fn from_brick_type(brick_type: BrickType) -> Self {
+        use BrickType::*;
+        match brick_type {
+            Red => Image::RedBrick,
+            Green => Image::GreenBrick,
+            Blue => Image::BlueBrick,
+            Yellow => Image::YellowBrick,
+            Orange => Image::OrangeBrick,
+            Purple => Image::PurpleBrick,
+            Teal => Image::TealBrick,
+            Smoke(frame) => Image::SmokeBrick(frame),
+        }
     }
 }
 
@@ -110,6 +125,6 @@ fn test_invalid_smoke_brick() {
 #[test]
 fn test_valid_smoke_brick() {
     for i in 0..12 {
-        Image::SmokeBrick(i as i32).source_rect();
+        Image::SmokeBrick(i as u32).source_rect();
     }
 }
