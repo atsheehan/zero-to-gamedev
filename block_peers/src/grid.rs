@@ -171,31 +171,6 @@ impl Grid {
         }
     }
 
-    fn move_bricks_down(&mut self, above_line: i32) {
-        let mut row: i32 = above_line;
-        while row >= 0 {
-            for col in 0..self.width {
-                let cell = GridCell {
-                    col: col as i32,
-                    row: row,
-                };
-                let new_cell = cell + GridCell { col: 0, row: 1 };
-
-                if self.in_bounds(new_cell) {
-                    let old_idx = self.cell_index(cell);
-                    let old_content = self.cells[old_idx];
-                    let idx = self.cell_index(new_cell);
-                    self.cells[idx] = old_content;
-                    self.cells[old_idx] = Brick::Empty;
-                }
-            }
-
-            row -= 1;
-        }
-
-        self.clear_full_lines();
-    }
-
     pub fn update(&mut self) {
         // Handle continuous dropping
         self.drop_counter += 1;
