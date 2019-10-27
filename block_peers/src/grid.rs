@@ -3,7 +3,7 @@ use sdl2::rect::Rect;
 use serde::{Deserialize, Serialize};
 
 // Internal
-use crate::brick::{Brick, BrickIterator, GridCell};
+use crate::brick::{Brick, BrickIterator, BrickType, GridCell, LineIterator, MatchingLine};
 use crate::piece::{random_next_piece, Piece};
 use crate::render::{Image, Opacity, Renderer};
 
@@ -81,7 +81,7 @@ impl Grid {
     }
 
     fn is_occupied(&self, cell: GridCell) -> bool {
-        self.cells[self.cell_index(cell)] != Brick::Empty
+        !self.cells[self.cell_index(cell)].is_empty()
     }
 
     fn cell_index(&self, cell: GridCell) -> usize {
@@ -98,10 +98,46 @@ impl Grid {
         BrickIterator::new((0, 0), self.width, self.height, self.cells.clone())
     }
 
+    fn lines_matching<CB>(&self, callback: CB) -> LineIterator<CB>
+    where
+        CB: Fn(GridCell, Brick) -> bool,
+    {
+        LineIterator::new(self.cells.clone(), self.width, self.height, callback)
+    }
+
     fn attach_piece_to_grid(&mut self) {
         for cell in self.current_piece.global_iter() {
             let idx = self.cell_index(cell);
-            self.cells[idx] = Brick::Occupied(self.current_piece.image());
+            self.cells[idx] = Brick::Occupied(self.current_piece.brick_type());
+        }
+        self.animate_full_lines();
+    }
+
+    fn animate_full_lines(&mut self) {
+        for MatchingLine { cells, .. } in self.lines_matching(|_, brick| !brick.is_empty()) {
+            for cell in cells {
+                let idx = self.cell_index(cell);
+                self.cells[idx] = Brick::Breaking(0);
+            }
+        }
+    }
+
+    fn move_bricks_down(&mut self, line: i32) {
+        for row in (0..line).into_iter().rev() {
+            for col in 0..self.width {
+                let cell = GridCell {
+                    col: col as i32,
+                    row: row,
+                };
+                let new_cell = cell + GridCell { col: 0, row: 1 };
+
+                if self.in_bounds(new_cell) {
+                    let old_idx = self.cell_index(cell);
+                    let old_content = self.cells[old_idx];
+                    let idx = self.cell_index(new_cell);
+                    self.cells[idx] = old_content;
+                }
+            }
         }
         self.clear_full_lines();
     }
@@ -161,10 +197,23 @@ impl Grid {
     }
 
     pub fn update(&mut self) {
+        // Handle continuous dropping
         self.drop_counter += 1;
-
         if self.drop_counter >= 100 {
             self.move_piece_down();
+        }
+
+        // Increment any outstanding animations
+        for cell in self.grid_iterator() {
+            let idx = self.cell_index(cell);
+            if let Some(next) = self.cells[idx].break_brick() {
+                self.cells[idx] = next;
+            }
+        }
+
+        // Clear finished animations
+        for MatchingLine { row, .. } in self.lines_matching(|_, brick| brick.is_broken()) {
+            self.move_bricks_down(row as i32);
         }
     }
 
@@ -179,7 +228,12 @@ impl Grid {
         for cell in self.grid_iterator() {
             let idx = self.cell_index(cell);
             match self.cells[idx] {
-                Brick::Occupied(image) => {
+                Brick::Occupied(brick_type) => {
+                    let image = Image::from_brick_type(brick_type);
+                    self.render_brick(renderer, cell, image, Opacity::Opaque);
+                }
+                Brick::Breaking(frame) => {
+                    let image = Image::from_brick_type(BrickType::Smoke(frame));
                     self.render_brick(renderer, cell, image, Opacity::Opaque);
                 }
                 _ => {}

@@ -10,7 +10,7 @@ use getopts::Options;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::env;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
 // Internal

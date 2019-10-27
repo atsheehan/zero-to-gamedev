@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::ops::Add;
-use serde::{Deserialize, Serialize};
 
 use crate::render::Image;
 
@@ -67,12 +67,56 @@ impl Add<GridCell> for GridCell {
 // Brick
 // -----
 
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+pub enum BrickType {
+    Red,
+    Green,
+    Blue,
+    Yellow,
+    Orange,
+    Purple,
+    Teal,
+    Smoke(u32),
+}
+
 /// Brick is used to represent the content in an (x, y) position on the
 /// game grid.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum Brick {
     Empty,
-    Occupied(Image),
+    Occupied(BrickType),
+    Breaking(u32),
+    Broken,
+}
+
+impl Brick {
+    pub fn break_brick(self) -> Option<Brick> {
+        match self {
+            Brick::Breaking(frame) => {
+                let next = frame + 1;
+                if next < Image::max_smoke_frame() {
+                    Some(Brick::Breaking(next))
+                } else {
+                    Some(Brick::Broken)
+                }
+            }
+            _ => None,
+        }
+    }
+
+    pub fn is_broken(&self) -> bool {
+        match self {
+            Brick::Broken => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Brick::Empty => true,
+            _ => false,
+        }
+    }
 }
 
 pub struct BrickIterator {
@@ -120,6 +164,82 @@ impl Iterator for BrickIterator {
 
             self.current_row += 1;
             self.current_col = 0;
+        }
+
+        None
+    }
+}
+
+pub struct MatchingLine {
+    pub cells: Vec<GridCell>,
+    pub row: u32,
+}
+
+pub struct LineIterator<CB>
+where
+    CB: Fn(GridCell, Brick) -> bool,
+{
+    cells: Vec<Brick>,
+    num_columns: u32,
+    num_rows: u32,
+    current_col: i32,
+    current_row: i32,
+    callback: CB,
+}
+
+impl<CB> LineIterator<CB>
+where
+    CB: Fn(GridCell, Brick) -> bool,
+{
+    pub fn new(cells: Vec<Brick>, num_columns: u32, num_rows: u32, callback: CB) -> Self {
+        Self {
+            cells,
+            num_columns,
+            num_rows,
+            current_col: 0,
+            current_row: 0,
+            callback,
+        }
+    }
+}
+
+impl<CB> Iterator for LineIterator<CB>
+where
+    CB: Fn(GridCell, Brick) -> bool,
+{
+    type Item = MatchingLine;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.current_row < self.num_rows as i32 {
+            let mut all_true = true;
+            let mut grid_cells = Vec::new();
+
+            while self.current_col < self.num_columns as i32 {
+                let index =
+                    ((self.current_row * self.num_columns as i32) + self.current_col) as usize;
+
+                let grid_cell = GridCell {
+                    col: self.current_col,
+                    row: self.current_row,
+                };
+                grid_cells.push(grid_cell);
+
+                let brick = self.cells[index].clone();
+
+                all_true &= (self.callback)(grid_cell, brick);
+                self.current_col += 1;
+            }
+
+            let row = self.current_row as u32;
+            self.current_row += 1;
+            self.current_col = 0;
+
+            if all_true {
+                return Some(MatchingLine {
+                    row,
+                    cells: grid_cells,
+                });
+            }
         }
 
         None
