@@ -1,5 +1,6 @@
-use crate::render::Renderer;
 use sdl2::event::Event;
+
+use crate::render::Renderer;
 
 pub trait Scene {
     fn input(self: Box<Self>, event: Event) -> Box<dyn Scene>;

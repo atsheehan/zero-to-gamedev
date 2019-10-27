@@ -64,6 +64,7 @@ impl Scene for GameScene {
         if self.grid.gameover {
             return Some(Box::new(GameOverScene::new()));
         }
+
         None
     }
 }

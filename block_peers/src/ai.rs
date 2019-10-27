@@ -8,7 +8,6 @@ use crate::render::Renderer;
 pub struct DumbAI {
     grid: Grid,
     move_counter: u32,
-    drop_counter: u32,
 }
 
 impl DumbAI {
@@ -16,18 +15,13 @@ impl DumbAI {
         Self {
             grid,
             move_counter: 0,
-            drop_counter: 0,
         }
     }
 
     pub fn update(&mut self) {
-        self.drop_counter += 1;
-        self.move_counter += 1;
+        self.grid.update();
 
-        if self.drop_counter % 100 == 0 {
-            self.drop_counter = 0;
-            self.grid.move_piece_down();
-        }
+        self.move_counter += 1;
 
         if self.move_counter % 40 == 0 {
             self.move_counter = 0;
