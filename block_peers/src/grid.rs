@@ -81,7 +81,7 @@ impl Grid {
     }
 
     fn is_occupied(&self, cell: GridCell) -> bool {
-        self.cells[self.cell_index(cell)] != Brick::Empty
+        !self.cells[self.cell_index(cell)].is_empty()
     }
 
     fn cell_index(&self, cell: GridCell) -> usize {
@@ -114,7 +114,7 @@ impl Grid {
     }
 
     fn animate_full_lines(&mut self) {
-        for MatchingLine { cells, .. } in self.lines_matching(|_, brick| brick != Brick::Empty) {
+        for MatchingLine { cells, .. } in self.lines_matching(|_, brick| !brick.is_empty()) {
             for cell in cells {
                 let idx = self.cell_index(cell);
                 self.cells[idx] = Brick::Breaking(0);

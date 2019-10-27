@@ -110,6 +110,13 @@ impl Brick {
             _ => false,
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Brick::Empty => true,
+            _ => false,
+        }
+    }
 }
 
 pub struct BrickIterator {
