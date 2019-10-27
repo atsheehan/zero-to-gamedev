@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 // Internal
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 use block_peers::render::Renderer;
+use block_peers::scene::{Scene, TitleScene};
 use block_peers::util;
 
 // Constants
@@ -105,6 +106,9 @@ pub fn main() {
     let mut ups = 0;
     let mut fps_timer = Instant::now();
 
+    // Scene
+    let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(grid));
+
     'running: loop {
         // Check network for events
 
@@ -120,51 +124,23 @@ pub fn main() {
                     keycode: Some(Keycode::Q),
                     ..
                 } => break 'running,
-                Event::KeyDown {
-                    keycode: Some(Keycode::A),
-                    ..
-                } => {
-                    grid.move_piece_left();
+                event => {
+                    scene = scene.input(event);
                 }
-                Event::KeyDown {
-                    keycode: Some(Keycode::D),
-                    ..
-                } => {
-                    grid.move_piece_right();
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::S),
-                    ..
-                } => {
-                    grid.move_piece_down();
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::W),
-                    ..
-                } => {
-                    grid.move_piece_to_bottom();
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::E),
-                    ..
-                } => {
-                    grid.rotate();
-                }
-                _ => {}
             }
         }
 
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            grid.update();
+            scene.update();
             previous_instant += tick_duration;
             ups += 1;
         }
 
         renderer.clear();
+        scene.render(&mut renderer);
 
         // Render world here
-        grid.render(&mut renderer);
         fps += 1;
 
         if fps_timer.elapsed().as_millis() >= 1000 {
