@@ -19,11 +19,16 @@ pub enum Image {
     PurpleBrick,
     TealBrick,
     SmokeBrick(u32),
+    Title,
+    // Temp: once we have font rendering, remove this
+    SpaceText,
 }
 
 impl Image {
     fn source_rect(self) -> Rect {
         match self {
+            Self::Title => Rect::new(0, 0, 440, 65),
+            Self::SpaceText => Rect::new(0, 0, 99, 28),
             Self::RedBrick => Rect::new(0, 0, 32, 32),
             Self::GreenBrick => Rect::new(32, 0, 32, 32),
             Self::BlueBrick => Rect::new(64, 0, 32, 32),
@@ -77,17 +82,48 @@ impl Opacity {
 
 pub struct Renderer {
     canvas: WindowCanvas,
-    texture: Texture,
+    pieces: Texture,
+    title: Texture,
+    space: Texture,
+}
+
+#[derive(Debug)]
+pub struct WindowSize {
+    pub width: u32,
+    pub height: u32,
 }
 
 impl Renderer {
     pub fn new(canvas: WindowCanvas) -> Self {
         let texture_creator = canvas.texture_creator();
-        let texture = texture_creator
+        let pieces = texture_creator
             .load_texture(Path::new("assets/tiles.png"))
             .unwrap();
+        let title = texture_creator
+            .load_texture(Path::new("assets/title.png"))
+            .unwrap();
+        let space = texture_creator
+            .load_texture(Path::new("assets/space.png"))
+            .unwrap();
 
-        Self { canvas, texture }
+        Self {
+            canvas,
+            pieces,
+            title,
+            space,
+        }
+    }
+
+    pub fn size(&self) -> WindowSize {
+        let result = self
+            .canvas
+            .output_size()
+            .expect("unable to determine window size of canvas");
+
+        WindowSize {
+            width: result.0,
+            height: result.1,
+        }
     }
 
     pub fn clear(&mut self) {
@@ -105,10 +141,32 @@ impl Renderer {
     }
 
     pub fn render_image(&mut self, image: Image, dest_rect: Rect, opacity: Opacity) {
-        self.texture.set_alpha_mod(opacity.alpha());
-        self.canvas
-            .copy(&self.texture, image.source_rect(), dest_rect)
-            .expect("failed to render image");
+        match image {
+            Image::Title => {
+                self.canvas
+                    .copy(&self.title, image.source_rect(), dest_rect)
+                    .expect("failed to render image");
+            }
+            Image::SpaceText => {
+                self.canvas
+                    .copy(&self.space, image.source_rect(), dest_rect)
+                    .expect("failed to render image");
+            }
+            _ => {
+                self.pieces.set_alpha_mod(opacity.alpha());
+                self.canvas
+                    .copy(&self.pieces, image.source_rect(), dest_rect)
+                    .expect("failed to render image");
+            }
+        }
+    }
+
+    pub fn render_title(&mut self, x: i32, y: i32) {
+        self.render_image(Image::Title, Rect::new(x, y, 440, 65), Opacity::Opaque);
+    }
+
+    pub fn render_space(&mut self, x: i32, y: i32) {
+        self.render_image(Image::SpaceText, Rect::new(x, y, 99, 28), Opacity::Opaque);
     }
 }
 

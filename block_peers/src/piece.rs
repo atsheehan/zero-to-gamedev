@@ -112,11 +112,31 @@ impl Piece {
         }
     }
 
+    pub fn move_right_times(&self, num: i32) -> Self {
+        Self {
+            shape_idx: self.shape_idx,
+            rotation: self.rotation,
+            position: self.position + GridCell { col: num, row: 0 },
+        }
+    }
+
     pub fn move_left(&self) -> Self {
         Self {
             shape_idx: self.shape_idx,
             rotation: self.rotation,
             position: self.position + GridCell { col: -1, row: 0 },
+        }
+    }
+
+    pub fn center(&self, width: u32) -> Self {
+        let col = (width - 4) / 2;
+        Self {
+            shape_idx: self.shape_idx,
+            rotation: self.rotation,
+            position: GridCell {
+                col: col as i32,
+                row: self.position.row,
+            },
         }
     }
 
@@ -129,7 +149,7 @@ impl Piece {
 }
 
 impl Piece {
-    fn new(shape_idx: usize) -> Self {
+    pub fn new(shape_idx: usize) -> Self {
         if shape_idx > SHAPES.len() {
             panic!("tried providing a piece shape index that doesn't exist");
         }

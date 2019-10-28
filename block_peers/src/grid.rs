@@ -16,14 +16,17 @@ pub struct Grid {
     cells: Vec<Brick>,
     current_piece: Piece,
     drop_counter: u32,
+    pub gameover: bool,
 }
 
+// ------------
+// Public Grid
+// ------------
 impl Grid {
     pub fn new(height: u32, width: u32) -> Self {
         let cell_count = height * width;
         let cells = vec![Brick::Empty; cell_count as usize];
-        // Move piece to right a bit to center it
-        let current_piece = random_next_piece().move_right().move_right();
+        let current_piece = random_next_piece().center(width);
 
         Self {
             height,
@@ -31,6 +34,7 @@ impl Grid {
             cells,
             current_piece,
             drop_counter: 0,
+            gameover: false,
         }
     }
 
@@ -64,13 +68,109 @@ impl Grid {
             false
         } else {
             self.attach_piece_to_grid();
-            self.current_piece = random_next_piece().move_right().move_right();
+            self.spawn_next_piece();
             true
         }
     }
 
     pub fn move_piece_to_bottom(&mut self) {
         while !self.move_piece_down() {}
+    }
+
+    pub fn update(&mut self) {
+        // Handle continuous dropping
+        self.drop_counter += 1;
+        if self.drop_counter >= 100 {
+            self.move_piece_down();
+        }
+
+        // Increment any outstanding animations
+        for cell in self.grid_iterator() {
+            let idx = self.cell_index(cell);
+            if let Some(next) = self.cells[idx].break_brick() {
+                self.cells[idx] = next;
+            }
+        }
+
+        // Clear finished animations
+        for MatchingLine { row, .. } in self.lines_matching(|_, brick| brick.is_broken()) {
+            self.move_bricks_down(row as i32);
+        }
+    }
+
+    pub fn render(&self, renderer: &mut Renderer) {
+        // Render board background
+        renderer.fill_rect(
+            Rect::new(0, 0, self.width * CELL_SIZE, self.height * CELL_SIZE),
+            Color::RGB(0, 0, 0),
+        );
+
+        // Render occupied cells on the board
+        for cell in self.grid_iterator() {
+            let idx = self.cell_index(cell);
+            match self.cells[idx] {
+                Brick::Occupied(brick_type) => {
+                    let image = Image::from_brick_type(brick_type);
+                    self.render_brick(renderer, cell, image, Opacity::Opaque);
+                }
+                Brick::Breaking(frame) => {
+                    let image = Image::from_brick_type(BrickType::Smoke(frame));
+                    self.render_brick(renderer, cell, image, Opacity::Opaque);
+                }
+                _ => {}
+            }
+        }
+
+        // Render current piece
+        self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
+
+        // Render ghost piece
+        let mut ghost_piece = self.current_piece.move_down();
+        let mut next_ghost_piece = ghost_piece.move_down();
+
+        while self.does_piece_fit(&next_ghost_piece) {
+            ghost_piece = next_ghost_piece;
+            next_ghost_piece = ghost_piece.move_down();
+        }
+
+        self.render_piece(renderer, &ghost_piece, Opacity::Translucent(128));
+    }
+}
+
+// ------------
+// Title Screen
+// ------------
+//
+// These methods are only for convenience in creating the menu title screen animation.
+// Avoid using them in the 'real' game.
+impl Grid {
+    pub fn place_piece_at_bottom(&mut self, piece: Piece) {
+        let mut piece = piece;
+        let mut next = piece.move_down();
+
+        while self.does_piece_fit(&next) {
+            piece = next;
+            next = piece.move_down();
+        }
+
+        for cell in piece.global_iter() {
+            let idx = self.cell_index(cell);
+            self.cells[idx] = Brick::Occupied(piece.brick_type());
+        }
+    }
+}
+
+// ------------
+// Private Grid
+// ------------
+impl Grid {
+    fn spawn_next_piece(&mut self) {
+        let next_piece = random_next_piece().center(self.width);
+        if self.does_piece_fit(&next_piece) {
+            self.current_piece = random_next_piece().center(self.width);
+        } else {
+            self.gameover = true;
+        }
     }
 
     fn in_bounds(&self, cell: GridCell) -> bool {
@@ -169,65 +269,6 @@ impl Grid {
 
             row -= 1;
         }
-    }
-
-    pub fn update(&mut self) {
-        // Handle continuous dropping
-        self.drop_counter += 1;
-        if self.drop_counter >= 100 {
-            self.move_piece_down();
-        }
-
-        // Increment any outstanding animations
-        for cell in self.grid_iterator() {
-            let idx = self.cell_index(cell);
-            if let Some(next) = self.cells[idx].break_brick() {
-                self.cells[idx] = next;
-            }
-        }
-
-        // Clear finished animations
-        for MatchingLine { row, .. } in self.lines_matching(|_, brick| brick.is_broken()) {
-            self.move_bricks_down(row as i32);
-        }
-    }
-
-    pub fn render(&self, renderer: &mut Renderer) {
-        // Render board background
-        renderer.fill_rect(
-            Rect::new(0, 0, self.width * CELL_SIZE, self.height * CELL_SIZE),
-            Color::RGB(0, 0, 0),
-        );
-
-        // Render occupied cells on the board
-        for cell in self.grid_iterator() {
-            let idx = self.cell_index(cell);
-            match self.cells[idx] {
-                Brick::Occupied(brick_type) => {
-                    let image = Image::from_brick_type(brick_type);
-                    self.render_brick(renderer, cell, image, Opacity::Opaque);
-                }
-                Brick::Breaking(frame) => {
-                    let image = Image::from_brick_type(BrickType::Smoke(frame));
-                    self.render_brick(renderer, cell, image, Opacity::Opaque);
-                }
-                _ => {}
-            }
-        }
-
-        // Render current piece
-        self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
-
-        // Render ghost piece
-        let mut ghost_piece = self.current_piece.move_down();
-        let mut next_ghost_piece = ghost_piece.move_down();
-
-        while self.does_piece_fit(&next_ghost_piece) {
-            ghost_piece = next_ghost_piece;
-            next_ghost_piece = ghost_piece.move_down();
-        }
-
-        self.render_piece(renderer, &ghost_piece, Opacity::Translucent(128));
     }
 
     fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, opacity: Opacity) {

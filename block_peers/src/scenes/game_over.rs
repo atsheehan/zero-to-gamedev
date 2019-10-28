@@ -1,0 +1,28 @@
+use sdl2::event::Event;
+use sdl2::pixels::Color;
+use sdl2::rect::Rect;
+
+use crate::render::Renderer;
+use crate::scene::Scene;
+
+pub struct GameOverScene {}
+
+impl GameOverScene {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Scene for GameOverScene {
+    fn input(self: Box<Self>, _event: Event) -> Box<dyn Scene> {
+        self
+    }
+
+    fn render(&self, renderer: &mut Renderer) {
+        renderer.fill_rect(Rect::new(0, 0, 200, 200), Color::RGB(0, 255, 0));
+    }
+
+    fn update(&mut self) -> Option<Box<dyn Scene>> {
+        None
+    }
+}

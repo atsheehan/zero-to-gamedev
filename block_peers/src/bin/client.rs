@@ -1,6 +1,6 @@
-extern crate getopts;
 #[macro_use]
 extern crate log;
+extern crate getopts;
 extern crate rand;
 extern crate sdl2;
 extern crate simplelog;
@@ -14,9 +14,11 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
 // Internal
+use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 use block_peers::render::Renderer;
-use block_peers::util;
+use block_peers::scene::Scene;
+use block_peers::scenes::TitleScene;
 
 // Constants
 const WINDOW_WIDTH: u32 = 800;
@@ -29,7 +31,7 @@ const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
 
 pub fn main() {
-    util::init_logging();
+    logging::init();
 
     let args: Vec<String> = env::args().collect();
 
@@ -68,7 +70,7 @@ pub fn main() {
     let server_addr = SocketAddr::new(host, port);
     socket.send(server_addr, &ClientMessage::Connect).unwrap();
 
-    let mut grid = match socket.receive::<ServerMessage>() {
+    let server_state = match socket.receive::<ServerMessage>() {
         Ok((source_addr, ServerMessage::Ack { grid })) => {
             debug!("connected to server at {:?}", source_addr);
             grid
@@ -87,7 +89,7 @@ pub fn main() {
 
     // Draw
     let window = video_subsystem
-        .window("Block Peers", WINDOW_WIDTH, WINDOW_HEIGHT)
+        .window("Block Wars", WINDOW_WIDTH, WINDOW_HEIGHT)
         .position_centered()
         .resizable()
         .opengl()
@@ -105,6 +107,9 @@ pub fn main() {
     let mut ups = 0;
     let mut fps_timer = Instant::now();
 
+    // Scene
+    let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_state, renderer.size()));
+
     'running: loop {
         // Check network for events
 
@@ -120,53 +125,27 @@ pub fn main() {
                     keycode: Some(Keycode::Q),
                     ..
                 } => break 'running,
-                Event::KeyDown {
-                    keycode: Some(Keycode::A),
-                    ..
-                } => {
-                    grid.move_piece_left();
+                event => {
+                    scene = scene.input(event);
                 }
-                Event::KeyDown {
-                    keycode: Some(Keycode::D),
-                    ..
-                } => {
-                    grid.move_piece_right();
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::S),
-                    ..
-                } => {
-                    grid.move_piece_down();
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::W),
-                    ..
-                } => {
-                    grid.move_piece_to_bottom();
-                }
-                Event::KeyDown {
-                    keycode: Some(Keycode::E),
-                    ..
-                } => {
-                    grid.rotate();
-                }
-                _ => {}
             }
         }
 
+        // Update
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            grid.update();
+            if let Some(next) = scene.update() {
+                scene = next;
+            }
             previous_instant += tick_duration;
             ups += 1;
         }
 
+        // Render
         renderer.clear();
+        scene.render(&mut renderer);
 
-        // Render world here
-        grid.render(&mut renderer);
         fps += 1;
-
         if fps_timer.elapsed().as_millis() >= 1000 {
             debug!("fps {} ups {}", fps, ups);
             fps = 0;
