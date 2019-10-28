@@ -1,20 +1,21 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use std::net::SocketAddr;
 
-use super::game::GameScene;
 use crate::ai::DumbAI;
 use crate::grid::Grid;
 use crate::piece::Piece;
 use crate::render::{Renderer, WindowSize};
 use crate::scene::Scene;
+use crate::scenes::ConnectScene;
 
 pub struct TitleScene {
-    server_state: Grid,
+    server_addr: SocketAddr,
     ai: DumbAI,
 }
 
 impl TitleScene {
-    pub fn new(grid: Grid, size: WindowSize) -> Self {
+    pub fn new(server_addr: SocketAddr, size: WindowSize) -> Self {
         let width = size.width / 20;
         let height = size.height / 20;
         let mut background_grid = Grid::new(height, width);
@@ -28,7 +29,7 @@ impl TitleScene {
         background_grid.place_piece_at_bottom(Piece::new(1).rotate().move_right_times(8));
 
         Self {
-            server_state: grid,
+            server_addr,
             ai: DumbAI::new(background_grid),
         }
     }
@@ -40,7 +41,7 @@ impl Scene for TitleScene {
             Event::KeyDown {
                 keycode: Some(Keycode::Space),
                 ..
-            } => Box::new(GameScene::new(self.server_state)),
+            } => Box::new(ConnectScene::new(self.server_addr)),
 
             _ => self,
         }
