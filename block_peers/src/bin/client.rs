@@ -15,7 +15,6 @@ use std::time::{Duration, Instant};
 
 // Internal
 use block_peers::logging;
-use block_peers::net::{ClientMessage, ServerMessage, Socket};
 use block_peers::render::Renderer;
 use block_peers::scene::Scene;
 use block_peers::scenes::TitleScene;
@@ -66,21 +65,7 @@ pub fn main() {
         Err(_) => panic!("specific host was not valid socket address"),
     };
 
-    let mut socket = Socket::new().expect("could not open a new socket");
     let server_addr = SocketAddr::new(host, port);
-    socket.send(server_addr, &ClientMessage::Connect).unwrap();
-
-    let server_state = match socket.receive::<ServerMessage>() {
-        Ok((source_addr, ServerMessage::Ack { grid })) => {
-            debug!("connected to server at {:?}", source_addr);
-            grid
-        }
-        Err(_) => {
-            error!("received unknown message");
-            panic!("expected game state to be given from server on init")
-        }
-    };
-
     // Subsystems Init
     // Note: handles must stay in scope until end of program due to dropping.
     let sdl_context = sdl2::init().unwrap();
@@ -108,7 +93,7 @@ pub fn main() {
     let mut fps_timer = Instant::now();
 
     // Scene
-    let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_state, renderer.size()));
+    let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr, renderer.size()));
 
     'running: loop {
         // Check network for events
