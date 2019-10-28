@@ -35,13 +35,12 @@ impl Scene for ConnectScene {
             .unwrap();
 
         let grid = match self.socket.receive::<ServerMessage>() {
-            Ok((_source_addr, ServerMessage::Ack { grid })) => {
-                // how do I import these macros in?
-                // debug!("connected to server at {:?}", source_addr);
+            Ok((source_addr, ServerMessage::Ack { grid })) => {
+                debug!("connected to server at {:?}", source_addr);
                 grid
             }
             Err(_) => {
-                // error!("received unknown message");
+                error!("received unknown message");
                 panic!("expected game state to be given from server on init")
             }
         };

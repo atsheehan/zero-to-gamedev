@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 pub mod ai;
 pub mod brick;
 pub mod grid;
