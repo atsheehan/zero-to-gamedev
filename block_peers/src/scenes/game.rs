@@ -58,13 +58,13 @@ impl Scene for GameScene {
         self.grid.render(renderer);
     }
 
-    fn update(&mut self) -> Option<Box<dyn Scene>> {
+    fn update(mut self: Box<Self>) -> Box<dyn Scene> {
         self.grid.update();
 
         if self.grid.gameover {
-            return Some(Box::new(GameOverScene::new()));
+            return Box::new(GameOverScene::new());
         }
 
-        None
+        self
     }
 }
