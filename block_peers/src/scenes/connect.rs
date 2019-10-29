@@ -29,7 +29,7 @@ impl Scene for ConnectScene {
 
     fn render(&self, _renderer: &mut Renderer) {}
 
-    fn update(&mut self) -> Option<Box<dyn Scene>> {
+    fn update(mut self: Box<Self>) -> Box<dyn Scene> {
         self.socket
             .send(self.server_addr, &ClientMessage::Connect)
             .unwrap();
