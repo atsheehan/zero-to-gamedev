@@ -35,9 +35,9 @@ impl Scene for ConnectScene {
             .unwrap();
 
         let grid = match self.socket.receive::<ServerMessage>() {
-            Ok((source_addr, ServerMessage::Ack { grid })) => {
+            Ok((source_addr, ServerMessage::Sync { grid })) => {
                 debug!("connected to server at {:?}", source_addr);
-                grid
+                grid.into_owned()
             }
             Err(_) => {
                 error!("received unknown message");

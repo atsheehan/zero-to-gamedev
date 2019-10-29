@@ -5,6 +5,7 @@ use block_peers::grid::Grid;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 
 use getopts::Options;
+use std::borrow::Cow;
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
@@ -45,7 +46,12 @@ fn main() {
         Ok((source_addr, ClientMessage::Connect)) => {
             println!("client at {:?} connected", source_addr);
             socket
-                .send(source_addr, &ServerMessage::Ack { grid })
+                .send(
+                    source_addr,
+                    &ServerMessage::Sync {
+                        grid: Cow::Borrowed(&grid),
+                    },
+                )
                 .unwrap();
         }
         Err(_) => {

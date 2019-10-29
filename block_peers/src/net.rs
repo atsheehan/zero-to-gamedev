@@ -1,5 +1,6 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::io::Result;
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
@@ -45,19 +46,11 @@ pub enum ClientMessage {
     Connect,
 }
 
-impl ClientMessage {
-    pub fn into_bytes(self) -> Vec<u8> {
-        bincode::serialize(&self).unwrap()
-    }
-}
-
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum ServerMessage {
-    Ack { grid: Grid },
-}
-
-impl ServerMessage {
-    pub fn into_bytes(self) -> Vec<u8> {
-        bincode::serialize(&self).unwrap()
-    }
+pub enum ServerMessage<'a> {
+    // Use copy-on-write (Cow) here for the grid because we want to
+    // borrow the grid from server when it is writing the message, but
+    // own the grid when the client receives and deserializes the
+    // message. Cow lets us treat borrowed and owned data similarly
+    Sync { grid: Cow<'a, Grid> },
 }
