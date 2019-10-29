@@ -53,9 +53,8 @@ impl Scene for TitleScene {
         renderer.render_space(350, 320);
     }
 
-    fn update(&mut self) -> Option<Box<dyn Scene>> {
+    fn update(mut self: Box<Self>) -> Box<dyn Scene> {
         self.ai.update();
-
-        None
+        self
     }
 }

@@ -119,9 +119,7 @@ pub fn main() {
         // Update
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            if let Some(next) = scene.update() {
-                scene = next;
-            }
+            scene = scene.update();
             previous_instant += tick_duration;
             ups += 1;
         }

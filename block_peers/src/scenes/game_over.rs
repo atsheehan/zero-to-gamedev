@@ -22,7 +22,7 @@ impl Scene for GameOverScene {
         renderer.fill_rect(Rect::new(0, 0, 200, 200), Color::RGB(0, 255, 0));
     }
 
-    fn update(&mut self) -> Option<Box<dyn Scene>> {
-        None
+    fn update(self: Box<Self>) -> Box<dyn Scene> {
+        self
     }
 }
