@@ -40,22 +40,25 @@ fn main() {
     let server_addr = SocketAddr::new(DEFAULT_HOST, port);
     let mut socket = Socket::bind(server_addr).expect("could not create socket");
 
-    let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
+    loop {
+        match socket.receive::<ClientMessage>() {
+            Ok(Some((source_addr, ClientMessage::Connect))) => {
+                println!("client at {:?} connected", source_addr);
+                let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
 
-    match socket.receive::<ClientMessage>() {
-        Ok((source_addr, ClientMessage::Connect)) => {
-            println!("client at {:?} connected", source_addr);
-            socket
-                .send(
-                    source_addr,
-                    &ServerMessage::Sync {
-                        grid: Cow::Borrowed(&grid),
-                    },
-                )
-                .unwrap();
-        }
-        Err(_) => {
-            println!("received unknown message");
+                socket
+                    .send(
+                        source_addr,
+                        &ServerMessage::Sync {
+                            grid: Cow::Borrowed(&grid),
+                        },
+                    )
+                    .unwrap();
+            }
+            Ok(None) => {}
+            Err(_) => {
+                println!("something went wrong");
+            }
         }
     }
 }
