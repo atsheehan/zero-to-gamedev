@@ -1,7 +1,7 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::io::Result;
+use std::io::{ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
 use crate::grid::Grid;
@@ -19,18 +19,24 @@ impl Socket {
 
     /// Binds a new UDP socket to the specific socket address.
     pub fn bind<A: ToSocketAddrs>(addr: A) -> Result<Self> {
+        let socket = UdpSocket::bind(addr)?;
+        socket.set_nonblocking(true)?;
+
         let buffer = [0; 1024];
-        UdpSocket::bind(addr).map(|socket| Socket { socket, buffer })
+        Ok(Socket { socket, buffer })
     }
 
-    pub fn receive<D: DeserializeOwned>(&mut self) -> Result<(SocketAddr, D)> {
+    pub fn receive<D: DeserializeOwned>(&mut self) -> Result<Option<(SocketAddr, D)>> {
         let (bytes_received, source_addr) = match self.socket.recv_from(&mut self.buffer) {
             Ok(result) => result,
+            Err(ref e) if e.kind() == ErrorKind::WouldBlock => return Ok(None),
             Err(e) => return Err(e),
         };
 
         let data = &self.buffer[..bytes_received];
-        Ok((source_addr, bincode::deserialize(&data).unwrap()))
+        Ok(bincode::deserialize(&data)
+            .ok()
+            .map(|message| (source_addr, message)))
     }
 
     pub fn send<A: ToSocketAddrs, S: Serialize>(&mut self, addr: A, message: S) -> Result<()> {
