@@ -1,18 +1,27 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use std::net::SocketAddr;
 
 use super::game_over::GameOverScene;
 use crate::grid::Grid;
+use crate::input;
+use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
 use crate::scene::Scene;
 
 pub struct GameScene {
     grid: Grid,
+    socket: Socket,
+    address: SocketAddr,
 }
 
 impl GameScene {
-    pub fn new(grid: Grid) -> Self {
-        Self { grid }
+    pub fn new(grid: Grid, socket: Socket, address: SocketAddr) -> Self {
+        Self {
+            grid,
+            socket,
+            address,
+        }
     }
 }
 
@@ -23,31 +32,61 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::A),
                 ..
             } => {
-                self.grid.move_piece_left();
+                // self.grid.move_piece_left();
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::A)),
+                    )
+                    .unwrap();
             }
             Event::KeyDown {
                 keycode: Some(Keycode::D),
                 ..
             } => {
-                self.grid.move_piece_right();
+                // self.grid.move_piece_right();
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::D)),
+                    )
+                    .unwrap();
             }
             Event::KeyDown {
                 keycode: Some(Keycode::S),
                 ..
             } => {
-                self.grid.move_piece_down();
+                // self.grid.move_piece_down();
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::S)),
+                    )
+                    .unwrap();
             }
             Event::KeyDown {
                 keycode: Some(Keycode::W),
                 ..
             } => {
-                self.grid.move_piece_to_bottom();
+                // self.grid.move_piece_to_bottom();
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::W)),
+                    )
+                    .unwrap();
             }
             Event::KeyDown {
                 keycode: Some(Keycode::E),
                 ..
             } => {
-                self.grid.rotate();
+                // self.grid.rotate();
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::E)),
+                    )
+                    .unwrap();
             }
             _ => {}
         }
@@ -59,12 +98,24 @@ impl Scene for GameScene {
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
-        self.grid.update();
+        // self.grid.update();
 
-        if self.grid.gameover {
-            return Box::new(GameOverScene::new());
+        match self.socket.receive::<ServerMessage>() {
+            Ok(Some((_source_addr, ServerMessage::Sync { grid }))) => {
+                self.grid = grid.into_owned();
+                self
+            }
+            Ok(None) => self,
+            Err(_) => {
+                error!("received unknown message");
+                panic!("expected game state to be given from server on init")
+            }
         }
 
-        self
+        // if self.grid.gameover {
+        // return Box::new(GameOverScene::new());
+        // }
+
+        // self
     }
 }

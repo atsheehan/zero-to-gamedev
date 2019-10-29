@@ -37,7 +37,7 @@ impl Scene for ConnectScene {
         match self.socket.receive::<ServerMessage>() {
             Ok(Some((source_addr, ServerMessage::Sync { grid }))) => {
                 debug!("connected to server at {:?}", source_addr);
-                Box::new(GameScene::new(grid.into_owned()))
+                Box::new(GameScene::new(grid.into_owned(), self.socket, self.server_addr))
             }
             Ok(None) => self,
             Err(_) => {

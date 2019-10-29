@@ -4,6 +4,7 @@ extern crate log;
 pub mod ai;
 pub mod brick;
 pub mod grid;
+pub mod input;
 pub mod logging;
 pub mod net;
 pub mod piece;

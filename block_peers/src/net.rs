@@ -5,11 +5,28 @@ use std::io::{ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
 use crate::grid::Grid;
+use crate::input::InputEvent;
 
 pub struct Socket {
     socket: UdpSocket,
     buffer: [u8; 1024],
 }
+
+/*
+
+   Do we want some sort of interface for sending messages to client easier?
+
+pub struct Client {
+    socket: Socket,
+    address: SocketAddr,
+}
+
+impl Client {
+    pub fn new(socket: Socket, address: SocketAddr) -> Self {
+        Self { socket, address }
+    }
+}
+*/
 
 impl Socket {
     /// Binds a new UDP socket on any avaliable port.
@@ -50,6 +67,7 @@ impl Socket {
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     Connect,
+    Input(InputEvent),
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]

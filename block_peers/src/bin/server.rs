@@ -5,6 +5,7 @@ extern crate ctrlc;
 extern crate getopts;
 
 use block_peers::grid::Grid;
+use block_peers::input::{InputEvent, Keycode};
 use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 
@@ -56,6 +57,8 @@ fn main() {
     })
     .expect("error setting Ctrl-C handler for graceful shutdown");
 
+    let mut grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
+
     loop {
         if should_quit.load(Ordering::Relaxed) {
             info!("gracefully shutting down server");
@@ -65,7 +68,6 @@ fn main() {
         match socket.receive::<ClientMessage>() {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
                 trace!("client at {:?} connected", source_addr);
-                let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
 
                 socket
                     .send(
@@ -75,6 +77,37 @@ fn main() {
                         },
                     )
                     .unwrap();
+            }
+            Ok(Some((source_addr, ClientMessage::Input(e)))) => {
+                debug!("received input event from client: {:?}", e);
+
+                match e {
+                    InputEvent::KeyDown(code) => {
+                        debug!("received keydown event");
+                        match code {
+                            Keycode::A => {
+                                grid.move_piece_left();
+                            }
+                            _ => {
+                                warn!("unhandled keycode: {:?}", code);
+                            }
+                        }
+
+                        grid.update();
+
+                        socket
+                            .send(
+                                source_addr,
+                                &ServerMessage::Sync {
+                                    grid: Cow::Borrowed(&grid),
+                                },
+                            )
+                            .unwrap();
+                    }
+                    _ => {
+                        warn!("unhandled input event: {:?}", e);
+                    }
+                }
             }
             Ok(None) => {}
             Err(_) => {
