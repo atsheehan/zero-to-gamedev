@@ -71,3 +71,7 @@ When writing Tetris clones in the past, having a consistent name for everything 
 * A **grid_cell** refers to any (row, col) coordinate in the grid. It can be empty or occupied by a brick.
 * A **brick** occupies a cell. It can be attached to the grid or part of the active piece moving around.
 * A **piece** is the collection of bricks a player controls. The arrangement of bricks is defined by the **shape** of the piece.
+
+## Bugs
+
+* Sometimes when clearing multiple lines at once blocks above the multiple lines don't properly fall down to where they're supposed to.
