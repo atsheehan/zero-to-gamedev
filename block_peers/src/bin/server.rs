@@ -5,7 +5,7 @@ extern crate ctrlc;
 extern crate getopts;
 
 use block_peers::grid::Grid;
-use block_peers::input::{InputEvent, Keycode};
+use block_peers::input::GameInputEvent;
 use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 
@@ -15,9 +15,13 @@ use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 const GRID_HEIGHT: u32 = 20;
 const GRID_WIDTH: u32 = 10;
+const TICKS_PER_SECOND: u64 = 60;
+const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
+const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 
 const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
@@ -57,6 +61,11 @@ fn main() {
     })
     .expect("error setting Ctrl-C handler for graceful shutdown");
 
+    // Game Loop
+    let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
+    let mut previous_instant = Instant::now();
+
+    // Game State
     let mut grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
 
     loop {
@@ -65,53 +74,55 @@ fn main() {
             break;
         }
 
-        match socket.receive::<ClientMessage>() {
-            Ok(Some((source_addr, ClientMessage::Connect))) => {
-                trace!("client at {:?} connected", source_addr);
+        let current_instant = Instant::now();
+        while current_instant - previous_instant >= tick_duration {
+            match socket.receive::<ClientMessage>() {
+                Ok(Some((source_addr, ClientMessage::Connect))) => {
+                    trace!("client at {:?} connected", source_addr);
 
-                socket
-                    .send(
-                        source_addr,
-                        &ServerMessage::Sync {
-                            grid: Cow::Borrowed(&grid),
-                        },
-                    )
-                    .unwrap();
-            }
-            Ok(Some((source_addr, ClientMessage::Input(e)))) => {
-                debug!("received input event from client: {:?}", e);
-
-                match e {
-                    InputEvent::KeyDown(code) => {
-                        debug!("received keydown event");
-                        match code {
-                            Keycode::A => {
-                                grid.move_piece_left();
-                            }
-                            _ => {
-                                warn!("unhandled keycode: {:?}", code);
-                            }
-                        }
-
-                        grid.update();
-
-                        socket
-                            .send(
-                                source_addr,
-                                &ServerMessage::Sync {
-                                    grid: Cow::Borrowed(&grid),
-                                },
-                            )
-                            .unwrap();
-                    }
-                    _ => {
-                        warn!("unhandled input event: {:?}", e);
-                    }
+                    socket
+                        .send(
+                            source_addr,
+                            &ServerMessage::Sync {
+                                grid: Cow::Borrowed(&grid),
+                            },
+                        )
+                        .unwrap();
                 }
-            }
-            Ok(None) => {}
-            Err(_) => {
-                error!("something went wrong");
+                Ok(Some((source_addr, ClientMessage::Input(e)))) => {
+                    debug!("received input event from client: {:?}", e);
+
+                    match e {
+                        GameInputEvent::MoveLeft => {
+                            grid.move_piece_left();
+                        }
+                        GameInputEvent::MoveRight => {
+                            grid.move_piece_right();
+                        }
+                        GameInputEvent::MoveDown => {
+                            grid.move_piece_down();
+                        }
+                        GameInputEvent::ForceToBottom => {
+                            grid.move_piece_to_bottom();
+                        }
+                        GameInputEvent::Rotate => {
+                            grid.rotate();
+                        }
+                    }
+                    grid.update();
+                    socket
+                        .send(
+                            source_addr,
+                            &ServerMessage::Sync {
+                                grid: Cow::Borrowed(&grid),
+                            },
+                        )
+                        .unwrap();
+                }
+                Ok(None) => {}
+                Err(_) => {
+                    error!("something went wrong");
+                }
             }
         }
     }

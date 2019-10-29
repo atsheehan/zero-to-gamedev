@@ -36,7 +36,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::A)),
+                        &ClientMessage::Input(input::GameInputEvent::MoveLeft),
                     )
                     .unwrap();
             }
@@ -48,7 +48,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::D)),
+                        &ClientMessage::Input(input::GameInputEvent::MoveRight),
                     )
                     .unwrap();
             }
@@ -60,7 +60,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::S)),
+                        &ClientMessage::Input(input::GameInputEvent::MoveDown),
                     )
                     .unwrap();
             }
@@ -72,7 +72,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::W)),
+                        &ClientMessage::Input(input::GameInputEvent::ForceToBottom),
                     )
                     .unwrap();
             }
@@ -84,7 +84,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Input(input::InputEvent::KeyDown(input::Keycode::E)),
+                        &ClientMessage::Input(input::GameInputEvent::Rotate),
                     )
                     .unwrap();
             }
