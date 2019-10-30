@@ -6,9 +6,11 @@ use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
 use crate::grid::{Grid, GridInputEvent};
 
+const BUFFER_SIZE: usize = 4096;
+
 pub struct Socket {
     socket: UdpSocket,
-    buffer: [u8; 1024],
+    buffer: [u8; BUFFER_SIZE],
 }
 
 impl Socket {
@@ -22,7 +24,7 @@ impl Socket {
         let socket = UdpSocket::bind(addr)?;
         socket.set_nonblocking(true)?;
 
-        let buffer = [0; 1024];
+        let buffer = [0; BUFFER_SIZE];
         Ok(Socket { socket, buffer })
     }
 

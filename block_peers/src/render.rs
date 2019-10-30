@@ -18,7 +18,7 @@ pub enum Image {
     OrangeBrick,
     PurpleBrick,
     TealBrick,
-    SmokeBrick(u32),
+    SmokeBrick(u16),
     Title,
     // Temp: once we have font rendering, remove this
     SpaceText,
@@ -45,7 +45,7 @@ impl Image {
         }
     }
 
-    pub fn max_smoke_frame() -> u32 {
+    pub fn max_smoke_frame() -> u16 {
         12
     }
 
@@ -183,6 +183,6 @@ fn test_invalid_smoke_brick() {
 #[test]
 fn test_valid_smoke_brick() {
     for i in 0..12 {
-        Image::SmokeBrick(i as u32).source_rect();
+        Image::SmokeBrick(i as u16).source_rect();
     }
 }

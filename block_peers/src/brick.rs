@@ -76,7 +76,7 @@ pub enum BrickType {
     Orange,
     Purple,
     Teal,
-    Smoke(u32),
+    Smoke(u16),
 }
 
 /// Brick is used to represent the content in an (x, y) position on the
@@ -85,7 +85,7 @@ pub enum BrickType {
 pub enum Brick {
     Empty,
     Occupied(BrickType),
-    Breaking(u32),
+    Breaking(u16),
     Broken,
 }
 

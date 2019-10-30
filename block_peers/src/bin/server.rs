@@ -4,6 +4,7 @@ extern crate bincode;
 extern crate getopts;
 
 use block_peers::grid::{Grid, GridInputEvent};
+use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 
 use getopts::Options;
@@ -22,6 +23,7 @@ const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
 
 fn main() {
+    logging::init();
     let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
