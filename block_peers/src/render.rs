@@ -22,15 +22,12 @@ pub enum Image {
     TealBrick,
     SmokeBrick(u16),
     Title,
-    // Temp: once we have font rendering, remove this
-    SpaceText,
 }
 
 impl Image {
     fn source_rect(self) -> Rect {
         match self {
-            Self::Title => Rect::new(0, 0, 440, 65),
-            Self::SpaceText => Rect::new(0, 0, 99, 28),
+            Self::Title => Rect::new(0, 64, 440, 65),
             Self::RedBrick => Rect::new(0, 0, 32, 32),
             Self::GreenBrick => Rect::new(32, 0, 32, 32),
             Self::BlueBrick => Rect::new(64, 0, 32, 32),
@@ -82,10 +79,18 @@ impl Opacity {
     }
 }
 
+/// Used to specify how large an image should be. If we specify just
+/// one dimension, the renderer can figure out how large the other
+/// dimension would be to maintain the aspect ratio. This is
+/// especially useful for fonts since the size varies based on the
+/// text being rendered and we don't know the size until runtime.
+///
+/// TODO: Add Dimensions::Width when needed
 pub enum Dimensions {
     Height(u32),
 }
 
+/// Used to specify where to render an image.
 pub enum Position {
     Center(i32, i32),
     LeftTop(i32, i32),
@@ -94,9 +99,7 @@ pub enum Position {
 pub struct Renderer<'ttf> {
     canvas: WindowCanvas,
     pieces: Texture,
-    title: Texture,
-    space: Texture,
-    string_textures: HashMap<&'static str, Texture>,
+    string_textures: HashMap<String, Texture>,
     font: Font<'ttf, 'static>,
 }
 
@@ -112,12 +115,6 @@ impl<'ttf> Renderer<'ttf> {
         let pieces = texture_creator
             .load_texture(Path::new("assets/tiles.png"))
             .unwrap();
-        let title = texture_creator
-            .load_texture(Path::new("assets/title.png"))
-            .unwrap();
-        let space = texture_creator
-            .load_texture(Path::new("assets/space.png"))
-            .unwrap();
 
         let font = ttf_context
             .load_font(Path::new("assets/VT323-Regular.ttf"), 20)
@@ -128,8 +125,6 @@ impl<'ttf> Renderer<'ttf> {
         Self {
             canvas,
             pieces,
-            title,
-            space,
             string_textures,
             font,
         }
@@ -161,28 +156,19 @@ impl<'ttf> Renderer<'ttf> {
         self.canvas.fill_rect(rect).expect("failed to fill rect");
     }
 
+    // TODO: update function to use Position / Dimensions similar to render_text
     pub fn render_image(&mut self, image: Image, dest_rect: Rect, opacity: Opacity) {
-        match image {
-            Image::Title => {
-                self.canvas
-                    .copy(&self.title, image.source_rect(), dest_rect)
-                    .expect("failed to render image");
-            }
-            Image::SpaceText => {
-                self.canvas
-                    .copy(&self.space, image.source_rect(), dest_rect)
-                    .expect("failed to render image");
-            }
-            _ => {
-                self.pieces.set_alpha_mod(opacity.alpha());
-                self.canvas
-                    .copy(&self.pieces, image.source_rect(), dest_rect)
-                    .expect("failed to render image");
-            }
-        }
+        self.pieces.set_alpha_mod(opacity.alpha());
+        self.canvas
+            .copy(&self.pieces, image.source_rect(), dest_rect)
+            .expect("failed to render image");
     }
 
-    pub fn render_text(&mut self, text: &'static str, position: Position, dimensions: Dimensions) {
+    pub fn render_text(&mut self, text: &str, position: Position, dimensions: Dimensions) {
+        // TODO: I think there is a more idiomatic way to do this in
+        // Rust using the Entry API for HashMap, although I couldn't
+        // get it working. In theory we shouldn't have to check if the
+        // key exists and then fetch it again below.
         if !self.string_textures.contains_key(text) {
             let texture = self
                 .canvas
@@ -195,7 +181,7 @@ impl<'ttf> Renderer<'ttf> {
                 )
                 .unwrap();
 
-            self.string_textures.insert(text, texture);
+            self.string_textures.insert(text.to_string(), texture);
         }
 
         let texture = self.string_textures.get(text).unwrap();
