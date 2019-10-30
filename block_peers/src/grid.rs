@@ -9,6 +9,15 @@ use crate::render::{Image, Opacity, Renderer};
 
 const CELL_SIZE: u32 = 20;
 
+#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
+pub enum GridInputEvent {
+    MoveLeft,
+    MoveRight,
+    MoveDown,
+    ForceToBottom,
+    Rotate,
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Grid {
     height: u32,

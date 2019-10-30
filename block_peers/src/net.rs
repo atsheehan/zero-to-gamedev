@@ -4,7 +4,7 @@ use std::borrow::Cow;
 use std::io::{ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
-use crate::grid::Grid;
+use crate::grid::{Grid, GridInputEvent};
 
 pub struct Socket {
     socket: UdpSocket,
@@ -50,6 +50,7 @@ impl Socket {
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     Connect,
+    Command(GridInputEvent),
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
