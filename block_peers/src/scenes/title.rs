@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use crate::ai::DumbAI;
 use crate::grid::Grid;
 use crate::piece::Piece;
-use crate::render::{Renderer, WindowSize};
+use crate::render::{Dimensions, Position, Renderer, WindowSize};
 use crate::scene::Scene;
 use crate::scenes::ConnectScene;
 
@@ -49,8 +49,12 @@ impl Scene for TitleScene {
 
     fn render(&self, renderer: &mut Renderer) {
         self.ai.render(renderer);
-        renderer.render_title(180, 200);
-        renderer.render_space(350, 320);
+        renderer.render_text(
+            "BLOCK WARS",
+            Position::Center(400, 200),
+            Dimensions::Height(80),
+        );
+        renderer.render_text("Space", Position::Center(400, 300), Dimensions::Height(40));
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {

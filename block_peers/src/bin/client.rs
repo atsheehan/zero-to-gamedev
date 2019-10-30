@@ -71,6 +71,7 @@ pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let _image = sdl2::image::init(sdl2::image::InitFlag::PNG).unwrap();
+    let ttf = sdl2::ttf::init().unwrap();
 
     // Draw
     let window = video_subsystem
@@ -80,7 +81,7 @@ pub fn main() {
         .opengl()
         .build()
         .unwrap();
-    let mut renderer = Renderer::new(window.into_canvas().present_vsync().build().unwrap());
+    let mut renderer = Renderer::new(window.into_canvas().present_vsync().build().unwrap(), &ttf);
 
     // Input
     let mut event_pump = sdl_context.event_pump().unwrap();

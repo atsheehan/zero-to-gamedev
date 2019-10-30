@@ -2,7 +2,9 @@ use sdl2::image::LoadTexture;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
+use sdl2::ttf::{Font, Sdl2TtfContext};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::Path;
 
 use crate::brick::BrickType;
@@ -80,11 +82,22 @@ impl Opacity {
     }
 }
 
-pub struct Renderer {
+pub enum Dimensions {
+    Height(u32),
+}
+
+pub enum Position {
+    Center(i32, i32),
+    LeftTop(i32, i32),
+}
+
+pub struct Renderer<'ttf> {
     canvas: WindowCanvas,
     pieces: Texture,
     title: Texture,
     space: Texture,
+    string_textures: HashMap<&'static str, Texture>,
+    font: Font<'ttf, 'static>,
 }
 
 #[derive(Debug)]
@@ -93,8 +106,8 @@ pub struct WindowSize {
     pub height: u32,
 }
 
-impl Renderer {
-    pub fn new(canvas: WindowCanvas) -> Self {
+impl<'ttf> Renderer<'ttf> {
+    pub fn new(canvas: WindowCanvas, ttf_context: &'ttf Sdl2TtfContext) -> Self {
         let texture_creator = canvas.texture_creator();
         let pieces = texture_creator
             .load_texture(Path::new("assets/tiles.png"))
@@ -106,11 +119,19 @@ impl Renderer {
             .load_texture(Path::new("assets/space.png"))
             .unwrap();
 
+        let font = ttf_context
+            .load_font(Path::new("assets/VT323-Regular.ttf"), 20)
+            .unwrap();
+
+        let string_textures = HashMap::new();
+
         Self {
             canvas,
             pieces,
             title,
             space,
+            string_textures,
+            font,
         }
     }
 
@@ -161,13 +182,52 @@ impl Renderer {
         }
     }
 
-    pub fn render_title(&mut self, x: i32, y: i32) {
-        self.render_image(Image::Title, Rect::new(x, y, 440, 65), Opacity::Opaque);
-    }
+    pub fn render_text(&mut self, text: &'static str, position: Position, dimensions: Dimensions) {
+        if !self.string_textures.contains_key(text) {
+            let texture = self
+                .canvas
+                .texture_creator()
+                .create_texture_from_surface(
+                    self.font
+                        .render(text)
+                        .solid(Color::RGB(255, 255, 255))
+                        .unwrap(),
+                )
+                .unwrap();
 
-    pub fn render_space(&mut self, x: i32, y: i32) {
-        self.render_image(Image::SpaceText, Rect::new(x, y, 99, 28), Opacity::Opaque);
+            self.string_textures.insert(text, texture);
+        }
+
+        let texture = self.string_textures.get(text).unwrap();
+        self.canvas
+            .copy(
+                &texture,
+                None,
+                compute_dest_rect(&texture, position, dimensions),
+            )
+            .unwrap();
     }
+}
+
+fn compute_dest_rect(texture: &Texture, position: Position, dimensions: Dimensions) -> Rect {
+    let texture_details = texture.query();
+
+    let (width, height) = match dimensions {
+        Dimensions::Height(target_height) => {
+            let target_width = ((texture_details.width as f32 / texture_details.height as f32)
+                * target_height as f32) as u32;
+            (target_width, target_height)
+        }
+    };
+
+    let (left, top) = match position {
+        Position::Center(x_center, y_center) => {
+            (x_center - width as i32 / 2, y_center - height as i32 / 2)
+        }
+        Position::LeftTop(left, top) => (left, top),
+    };
+
+    Rect::new(left, top, width, height)
 }
 
 // --------
