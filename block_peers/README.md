@@ -32,7 +32,6 @@ This deliverable defines the basic mechanics of controlling the active piece and
 * [x] After a piece is attached to the grid, any full lines are cleared out and bricks above the line are dropped down.
 * [x] Add a 'center' functionality to a piece so it can be moved to correct starting point
 * [x] If a new piece is generated on top of an occupied cell, the game is over.
-* [ ] As time goes on the game speeds up and gets more challenging
 
 ## Iteration 2 - Networked Client
 
@@ -51,17 +50,47 @@ This will still be a single player game, but I think splitting client and server
 
 * [x] Server process listens on UDP port 4485. When a client connects, it responds with an ACK message.
 * [x] Server sends the initial game state to the client and the client renders it.
-* [ ] Client sends any user commands to the server and the server responds with the new state.
-* [ ] Server sends game state whenever it changes.
+* [x] Client sends any user commands to the server and the server responds with the new state.
+* [x] Server sends game state whenever it changes.
 * [ ] Client disconnects before quitting.
 * [ ] Server rejects connections while a session is active.
 
-## Backlog
+## Iteration 3 - Multiplayer
 
-* Track points
-* Adding a second player / competitive play
-* Sounds / music
-* Title screen
+This deliverable will support multiple players in a single game. A game server listens for connections from clients, and once two clients have connected it will start the game. Both players have their own grid and the game continues until either player loses.
+
+### Story Breakdown
+
+TODO
+
+## Backlog / Cleanup
+
+### Gameplay
+
+* [ ] As time goes on the game speeds up and gets more challenging
+* [ ] Implement AI for multiplayer
+* [ ] Clearing multiple lines affects other players grid somehow in multiplayer (e.g. drops random pieces)
+* [ ] Implement the [Super Rotation System (SRS)](https://tetris.wiki/Super_Rotation_System) standard for rotating pieces
+* [ ] Prevent instant moves (i.e. have a cooldown between moves to prevent an AI for instantly winning the game)
+* [ ] Show the next piece
+* [ ] Track points
+* [ ] Add gamepad support
+
+### Network
+
+* [ ] More efficient grid serialization over network
+* [ ] Only send network updates when there are changes
+* [ ] Send partial updates over the network
+* [ ] Use a shared secret to verify network messages are authentic
+* [ ] Add a handshake to establish connection to ensure packet is coming from legitimate host
+* [ ] Server disconnects inactive players
+
+### Assets / Presentation
+
+* [*] Title screen
+* [ ] Sounds / music
+* [ ] Add font rendering
+* [ ] Add fullscreen support
 
 ## Glossary
 
