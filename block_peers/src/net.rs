@@ -20,9 +20,9 @@ lazy_static! {
 
 const BUFFER_SIZE: usize = 4096;
 
-// -------
-// Commands
-// -------
+// ---------------------------
+// Server <--> Client Messages
+// ---------------------------
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
@@ -71,11 +71,12 @@ impl Socket {
         };
 
         let data = &self.buffer[..bytes_received];
-        let packet: Packet = bincode::deserialize(&data).unwrap();
+        let packet: Packet =
+            bincode::deserialize(&data).expect("this shouldn't panic like this :(");
 
         if packet.header.protocol_id != *PROTOCOL_ID {
             error!("unknown incoming packet, ignoring");
-            return Err(Error::new(ErrorKind::Other, "oh no!"));
+            return Err(Error::new(ErrorKind::Other, "Unknown packet type"));
         }
 
         Ok(bincode::deserialize(&packet.body)
