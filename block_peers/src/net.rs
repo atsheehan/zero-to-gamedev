@@ -1,12 +1,23 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::io::{ErrorKind, Result};
+use std::io::{Error, ErrorKind, Result};
+use std::mem::transmute;
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
+use crate::constants::PROTOCOL_VERSION;
 use crate::grid::{Grid, GridInputEvent};
 
 const BUFFER_SIZE: usize = 4096;
+
+fn protocol_id() -> u32 {
+    let mut total: u32 = 0;
+    for b in "Block Wars".bytes() {
+        total += b as u32;
+    }
+    total += PROTOCOL_VERSION;
+    total
+}
 
 pub struct Socket {
     socket: UdpSocket,
@@ -35,15 +46,28 @@ impl Socket {
             Err(e) => return Err(e),
         };
 
-        let data = &self.buffer[..bytes_received];
+        let mut buf: [u8; 4] = [0, 0, 0, 0];
+        buf.copy_from_slice(&self.buffer[0..4]);
+        let num = u32::from_be_bytes(buf);
+        if num != protocol_id() {
+            error!("ignoring pakcet");
+            return Err(Error::new(ErrorKind::Other, "oh no!"));
+        }
+
+        let data = &self.buffer[4..bytes_received];
         Ok(bincode::deserialize(&data)
             .ok()
             .map(|message| (source_addr, message)))
     }
 
     pub fn send<A: ToSocketAddrs, S: Serialize>(&mut self, addr: A, message: S) -> Result<()> {
+        let mut packet: Vec<u8> = Vec::new();
+        let bytes: [u8; 4] = unsafe { transmute(protocol_id().to_be()) };
+        packet.extend_from_slice(&bytes);
+
         let serialized_message = bincode::serialize(&message).unwrap();
-        self.socket.send_to(&serialized_message, addr)?;
+        packet.extend_from_slice(&serialized_message);
+        self.socket.send_to(&packet, addr)?;
 
         Ok(())
     }
