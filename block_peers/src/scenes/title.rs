@@ -1,11 +1,12 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::rect::Rect;
 use std::net::SocketAddr;
 
 use crate::ai::DumbAI;
 use crate::grid::Grid;
 use crate::piece::Piece;
-use crate::render::{Renderer, WindowSize};
+use crate::render::{Dimensions, Image, Opacity, Position, Renderer, WindowSize};
 use crate::scene::Scene;
 use crate::scenes::ConnectScene;
 
@@ -49,8 +50,12 @@ impl Scene for TitleScene {
 
     fn render(&self, renderer: &mut Renderer) {
         self.ai.render(renderer);
-        renderer.render_title(180, 200);
-        renderer.render_space(350, 320);
+        renderer.render_image(Image::Title, Rect::new(160, 120, 480, 64), Opacity::Opaque);
+        renderer.render_text(
+            "Press Space",
+            Position::Center(400, 300),
+            Dimensions::Height(40),
+        );
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
