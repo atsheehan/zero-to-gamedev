@@ -2,7 +2,6 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::net::SocketAddr;
 
-use super::game_over::GameOverScene;
 use crate::grid::{Grid, GridInputEvent};
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
