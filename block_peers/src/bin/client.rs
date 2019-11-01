@@ -47,6 +47,11 @@ pub fn main() {
         "connect to host at specified address (default 127.0.0.1)",
         "HOST",
     );
+    opts.optflag(
+        "f",
+        "fullscreen",
+        "open the game in a fullscreen window",
+    );
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -65,6 +70,8 @@ pub fn main() {
         Err(_) => panic!("specific host was not valid socket address"),
     };
 
+    let fullscreen: bool = matches.opt_present("fullscreen");
+
     let server_addr = SocketAddr::new(host, port);
     // Subsystems Init
     // Note: handles must stay in scope until end of program due to dropping.
@@ -74,13 +81,16 @@ pub fn main() {
     let ttf = sdl2::ttf::init().unwrap();
 
     // Draw
-    let window = video_subsystem
-        .window("Block Wars", WINDOW_WIDTH, WINDOW_HEIGHT)
-        .position_centered()
-        .resizable()
-        .opengl()
-        .build()
-        .unwrap();
+    let mut window_builder = video_subsystem.window("Block Wars", WINDOW_WIDTH, WINDOW_HEIGHT);
+    window_builder.opengl();
+
+    if fullscreen {
+        window_builder.fullscreen();
+    } else {
+        window_builder.position_centered().resizable();
+    }
+
+    let window = window_builder.build().unwrap();
     let mut renderer = Renderer::new(window.into_canvas().present_vsync().build().unwrap(), &ttf);
 
     // Input
