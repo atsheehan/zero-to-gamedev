@@ -111,8 +111,8 @@ fn main() {
                 }
             }
             Ok(None) => {}
-            Err(_) => {
-                println!("something went wrong");
+            Err(e) => {
+                error!("error receiving message: {}", e);
             }
         }
     }

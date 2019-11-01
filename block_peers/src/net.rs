@@ -1,5 +1,6 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+
 use std::borrow::Cow;
 use std::io::{Error, ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
@@ -71,17 +72,20 @@ impl Socket {
         };
 
         let data = &self.buffer[..bytes_received];
-        let packet: Packet =
-            bincode::deserialize(&data).expect("this shouldn't panic like this :(");
+        let deserialized: Option<Packet> = bincode::deserialize(&data).ok();
 
-        if packet.header.protocol_id != *PROTOCOL_ID {
-            error!("unknown incoming packet, ignoring");
-            return Err(Error::new(ErrorKind::Other, "Unknown packet type"));
+        match deserialized {
+            Some(packet) => {
+                if packet.header.protocol_id != *PROTOCOL_ID {
+                    return Err(Error::new(ErrorKind::Other, "incorrect protocol id"));
+                }
+
+                Ok(bincode::deserialize(&packet.body)
+                    .ok()
+                    .map(|message| (source_addr, message)))
+            }
+            None => Err(Error::new(ErrorKind::Other, "unable to deserialize packet")),
         }
-
-        Ok(bincode::deserialize(&packet.body)
-            .ok()
-            .map(|message| (source_addr, message)))
     }
 
     pub fn send<A: ToSocketAddrs, S: Serialize>(&mut self, addr: A, message: S) -> Result<()> {
