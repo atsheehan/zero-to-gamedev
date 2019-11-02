@@ -55,6 +55,11 @@ impl Text {
         self
     }
 
+    pub fn left_top_xy(&mut self, x: i32, y: i32) -> &mut Self {
+        self.position(Position::LeftTop(x, y));
+        self
+    }
+
     pub fn height(&mut self, height: u32) -> &mut Self {
         self.dimensions(Dimensions::Height(height));
         self
