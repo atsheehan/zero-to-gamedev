@@ -1,4 +1,4 @@
-use sdl2::event::Event;
+use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
@@ -80,7 +80,14 @@ impl Scene for TitleScene {
                 self.state = self.state.next();
                 self
             }
-
+            Event::Window { win_event, .. } => match win_event {
+                WindowEvent::Resized(width, height) => {
+                    info!("New window dimensions: {} {}", width, height);
+                    warn!("TODO: fix the grid and dimensions of menu items being off");
+                    self
+                }
+                _ => self,
+            },
             _ => self,
         }
     }
