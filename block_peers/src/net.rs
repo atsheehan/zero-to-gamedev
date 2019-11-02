@@ -5,7 +5,6 @@ use std::borrow::Cow;
 use std::io::{Error, ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
-use crate::constants::PROTOCOL_VERSION;
 use crate::grid::{Grid, GridInputEvent};
 
 lazy_static! {
@@ -19,7 +18,12 @@ lazy_static! {
     };
 }
 
+/// Buffer size used for incoming packets. We don't currently have fragmentation so if a packet
+/// exceeds this size undefined behavior will ensue.
 const BUFFER_SIZE: usize = 4096;
+/// Block Wars game protocol version used in determining if incoming packets are allowed or
+/// should be ignored.
+const PROTOCOL_VERSION: u32 = 1;
 
 // ---------------------------
 // Server <--> Client Messages
@@ -72,10 +76,11 @@ impl Socket {
         };
 
         let data = &self.buffer[..bytes_received];
-        let deserialized: Option<Packet> = bincode::deserialize(&data).ok();
 
-        match deserialized {
-            Some(packet) => {
+        match bincode::deserialize(&data) {
+            Ok(packet) => {
+                let packet: Packet = packet;
+
                 if packet.header.protocol_id != *PROTOCOL_ID {
                     return Err(Error::new(ErrorKind::Other, "incorrect protocol id"));
                 }
@@ -84,7 +89,7 @@ impl Socket {
                     .ok()
                     .map(|message| (source_addr, message)))
             }
-            None => Err(Error::new(ErrorKind::Other, "unable to deserialize packet")),
+            Err(_) => Err(Error::new(ErrorKind::Other, "unable to deserialize packet")),
         }
     }
 
