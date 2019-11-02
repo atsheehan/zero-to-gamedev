@@ -26,13 +26,12 @@ impl GameScene {
 impl Scene for GameScene {
     fn lifecycle(&mut self, event: AppLifecycleEvent) {
         match event {
-            AppLifecycleEvent::Quit => {
+            AppLifecycleEvent::Shutdown => {
                 trace!("sending disconnect to the server");
                 self.socket
                     .send(self.address, &ClientMessage::Disconnect)
                     .unwrap();
             }
-            _ => {}
         }
     }
 

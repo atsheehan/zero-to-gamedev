@@ -117,9 +117,11 @@ pub fn main() {
                     keycode: Some(Keycode::Q),
                     ..
                 } => {
-                    scene.lifecycle(AppLifecycleEvent::Quit);
+                    trace!("app asked to shutdown");
+                    scene.lifecycle(AppLifecycleEvent::Shutdown);
                     break 'running;
                 }
+
                 event => {
                     scene = scene.input(event);
                 }

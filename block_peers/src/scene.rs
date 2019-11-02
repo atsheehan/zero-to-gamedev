@@ -3,9 +3,9 @@ use sdl2::event::Event;
 use crate::render::Renderer;
 
 pub enum AppLifecycleEvent {
-    Quit,
-    EnteredBackground,
-    EnteredForeground,
+    /// Either the user has requested to quit or some OS event has happened which wants the app to
+    /// shutdown.
+    Shutdown,
 }
 
 pub trait Scene {
