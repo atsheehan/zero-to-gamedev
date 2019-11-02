@@ -30,7 +30,6 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::A),
                 ..
             } => {
-                // self.grid.move_piece_left();
                 self.socket
                     .send(
                         self.address,
@@ -42,7 +41,6 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::D),
                 ..
             } => {
-                // self.grid.move_piece_right();
                 self.socket
                     .send(
                         self.address,
@@ -54,7 +52,6 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::S),
                 ..
             } => {
-                // self.grid.move_piece_down();
                 self.socket
                     .send(
                         self.address,
@@ -66,7 +63,6 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::W),
                 ..
             } => {
-                // self.grid.move_piece_to_bottom();
                 self.socket
                     .send(
                         self.address,
@@ -78,7 +74,6 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::E),
                 ..
             } => {
-                // self.grid.rotate();
                 self.socket
                     .send(
                         self.address,

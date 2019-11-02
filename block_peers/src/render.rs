@@ -4,10 +4,14 @@ use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
 use sdl2::ttf::{Font, Sdl2TtfContext};
 use serde::{Deserialize, Serialize};
+
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::path::Path;
 
 use crate::brick::BrickType;
+use crate::text::Text;
 
 /// Which image to render when calling `render_image`. This module
 /// maps the image to the appropriate location in the larger texture.
@@ -86,11 +90,13 @@ impl Opacity {
 /// text being rendered and we don't know the size until runtime.
 ///
 /// TODO: Add Dimensions::Width when needed
+#[derive(Debug, Copy, Clone, Hash)]
 pub enum Dimensions {
     Height(u32),
 }
 
 /// Used to specify where to render an image.
+#[derive(Debug, Copy, Clone, Hash)]
 pub enum Position {
     Center(i32, i32),
     LeftTop(i32, i32),
@@ -99,7 +105,7 @@ pub enum Position {
 pub struct Renderer<'ttf> {
     canvas: WindowCanvas,
     pieces: Texture,
-    string_textures: HashMap<String, Texture>,
+    string_textures: HashMap<u64, Texture>,
     font: Font<'ttf, 'static>,
 }
 
@@ -164,32 +170,32 @@ impl<'ttf> Renderer<'ttf> {
             .expect("failed to render image");
     }
 
-    pub fn render_text(&mut self, text: &str, position: Position, dimensions: Dimensions) {
-        // TODO: I think there is a more idiomatic way to do this in
-        // Rust using the Entry API for HashMap, although I couldn't
-        // get it working. In theory we shouldn't have to check if the
-        // key exists and then fetch it again below.
-        if !self.string_textures.contains_key(text) {
+    pub fn render_text(&mut self, text: Text) {
+        let mut hasher = DefaultHasher::new();
+        text.hash(&mut hasher);
+        let key = hasher.finish();
+
+        // TODO: Look into Entry API for less verbosity
+        if !self.string_textures.contains_key(&key) {
             let texture = self
                 .canvas
                 .texture_creator()
-                .create_texture_from_surface(
-                    self.font
-                        .render(text)
-                        .solid(Color::RGB(255, 255, 255))
-                        .unwrap(),
-                )
+                .create_texture_from_surface(self.font.render(text.raw).solid(text.color).unwrap())
                 .unwrap();
 
-            self.string_textures.insert(text.to_string(), texture);
+            self.string_textures.insert(key, texture);
         }
 
-        let texture = self.string_textures.get(text).unwrap();
+        let texture = self
+            .string_textures
+            .get(&key)
+            .expect("text texture missing but should always be present");
+
         self.canvas
             .copy(
                 &texture,
                 None,
-                compute_dest_rect(&texture, position, dimensions),
+                compute_dest_rect(&texture, text.position, text.dimensions),
             )
             .unwrap();
     }

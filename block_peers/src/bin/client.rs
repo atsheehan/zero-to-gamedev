@@ -47,11 +47,7 @@ pub fn main() {
         "connect to host at specified address (default 127.0.0.1)",
         "HOST",
     );
-    opts.optflag(
-        "f",
-        "fullscreen",
-        "open the game in a fullscreen window",
-    );
+    opts.optflag("f", "fullscreen", "open the game in a fullscreen window");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -107,8 +103,6 @@ pub fn main() {
     let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr, renderer.size()));
 
     'running: loop {
-        // Check network for events
-
         // Input
         for event in event_pump.poll_iter() {
             match event {
