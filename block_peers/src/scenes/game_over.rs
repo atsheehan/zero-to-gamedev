@@ -3,7 +3,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 
 use crate::render::Renderer;
-use crate::scene::Scene;
+use crate::scene::{AppLifecycleEvent, Scene};
 
 pub struct GameOverScene {}
 
@@ -14,6 +14,8 @@ impl GameOverScene {
 }
 
 impl Scene for GameOverScene {
+    fn lifecycle(&mut self, _event: AppLifecycleEvent) {}
+
     fn input(self: Box<Self>, _event: Event) -> Box<dyn Scene> {
         self
     }

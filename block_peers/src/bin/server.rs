@@ -53,7 +53,7 @@ fn main() {
 
     let mut player: Option<(SocketAddr, Grid)> = None;
 
-    loop {
+    'running: loop {
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
             if let Some((source_addr, ref mut grid)) = player {
@@ -73,7 +73,7 @@ fn main() {
 
         match socket.receive::<ClientMessage>() {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
-                debug!("client at {:?} connected", source_addr);
+                trace!("client at {:?} connected", source_addr);
                 let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
 
                 socket
@@ -88,7 +88,7 @@ fn main() {
                 player = Some((source_addr, grid));
             }
             Ok(Some((_source_addr, ClientMessage::Command(command)))) => {
-                debug!("server received command {:?}", command);
+                trace!("server received command {:?}", command);
 
                 if let Some((_, ref mut grid)) = player {
                     match command {
@@ -109,6 +109,10 @@ fn main() {
                         }
                     }
                 }
+            }
+            Ok(Some((source_addr, ClientMessage::Disconnect))) => {
+                trace!("client {} requested to disconnect", source_addr);
+                break 'running;
             }
             Ok(None) => {}
             Err(e) => {
