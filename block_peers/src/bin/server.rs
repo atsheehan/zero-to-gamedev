@@ -24,28 +24,9 @@ const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
 
 fn main() {
     logging::init();
-    let args: Vec<String> = env::args().collect();
+    let options = get_options();
 
-    let mut opts = Options::new();
-    opts.optopt(
-        "p",
-        "port",
-        "bind to the specified port (default 4485)",
-        "PORT",
-    );
-
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(f) => panic!(f.to_string()),
-    };
-
-    let port: u16 = match matches.opt_get("port") {
-        Ok(Some(port)) => port,
-        Ok(None) => DEFAULT_PORT,
-        Err(_) => panic!("specified port not valid"),
-    };
-
-    let server_addr = SocketAddr::new(DEFAULT_HOST, port);
+    let server_addr = SocketAddr::new(DEFAULT_HOST, options.port);
     let mut socket = Socket::bind(server_addr).expect("could not create socket");
 
     let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
@@ -53,7 +34,7 @@ fn main() {
 
     let mut player: Option<(SocketAddr, Grid)> = None;
 
-    loop {
+    'running: loop {
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
             if let Some((source_addr, ref mut grid)) = player {
@@ -96,7 +77,7 @@ fn main() {
                 }
             }
             Ok(Some((_source_addr, ClientMessage::Command(command)))) => {
-                debug!("server received command {:?}", command);
+                trace!("server received command {:?}", command);
 
                 if let Some((_, ref mut grid)) = player {
                     match command {
@@ -118,10 +99,43 @@ fn main() {
                     }
                 }
             }
+            Ok(Some((source_addr, ClientMessage::Disconnect))) => {
+                trace!("client {} requested to disconnect", source_addr);
+                break 'running;
+            }
             Ok(None) => {}
             Err(e) => {
                 error!("error receiving message: {}", e);
             }
         }
     }
+}
+
+struct ServerOptions {
+    port: u16,
+}
+
+fn get_options() -> ServerOptions {
+    let args: Vec<String> = env::args().collect();
+
+    let mut opts = Options::new();
+    opts.optopt(
+        "p",
+        "port",
+        "bind to the specified port (default 4485)",
+        "PORT",
+    );
+
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(f) => panic!(f.to_string()),
+    };
+
+    let port: u16 = match matches.opt_get("port") {
+        Ok(Some(port)) => port,
+        Ok(None) => DEFAULT_PORT,
+        Err(_) => panic!("specified port not valid"),
+    };
+
+    ServerOptions { port }
 }
