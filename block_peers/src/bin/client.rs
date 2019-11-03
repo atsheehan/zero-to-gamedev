@@ -26,53 +26,12 @@ const TICKS_PER_SECOND: u64 = 60;
 const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
 const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 
-const DEFAULT_PORT: u16 = 4485;
-const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-
 pub fn main() {
     logging::init();
+    let options = get_options();
 
-    let args: Vec<String> = env::args().collect();
+    let server_addr = SocketAddr::new(options.host, options.port);
 
-    let mut opts = Options::new();
-    opts.optopt(
-        "p",
-        "port",
-        "connect to server on specified port (default 4485)",
-        "PORT",
-    );
-    opts.optopt(
-        "h",
-        "host",
-        "connect to host at specified address (default 127.0.0.1)",
-        "HOST",
-    );
-    opts.optflag(
-        "f",
-        "fullscreen",
-        "open the game in a fullscreen window",
-    );
-
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(f) => panic!(f.to_string()),
-    };
-
-    let port: u16 = match matches.opt_get("port") {
-        Ok(Some(port)) => port,
-        Ok(None) => DEFAULT_PORT,
-        Err(_) => panic!("specified port not valid"),
-    };
-
-    let host: IpAddr = match matches.opt_get("host") {
-        Ok(Some(host)) => host,
-        Ok(None) => DEFAULT_HOST,
-        Err(_) => panic!("specific host was not valid socket address"),
-    };
-
-    let fullscreen: bool = matches.opt_present("fullscreen");
-
-    let server_addr = SocketAddr::new(host, port);
     // Subsystems Init
     // Note: handles must stay in scope until end of program due to dropping.
     let sdl_context = sdl2::init().unwrap();
@@ -84,7 +43,7 @@ pub fn main() {
     let mut window_builder = video_subsystem.window("Block Wars", WINDOW_WIDTH, WINDOW_HEIGHT);
     window_builder.opengl();
 
-    if fullscreen {
+    if options.fullscreen {
         window_builder.fullscreen();
     } else {
         window_builder.position_centered().resizable();
@@ -148,5 +107,58 @@ pub fn main() {
         }
 
         renderer.present();
+    }
+}
+
+const DEFAULT_PORT: u16 = 4485;
+const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+
+struct ClientOptions {
+    port: u16,
+    host: IpAddr,
+    fullscreen: bool,
+}
+
+fn get_options() -> ClientOptions {
+    let args: Vec<String> = env::args().collect();
+
+    let mut opts = Options::new();
+    opts.optopt(
+        "p",
+        "port",
+        "connect to server on specified port (default 4485)",
+        "PORT",
+    );
+    opts.optopt(
+        "h",
+        "host",
+        "connect to host at specified address (default 127.0.0.1)",
+        "HOST",
+    );
+    opts.optflag("f", "fullscreen", "open the game in a fullscreen window");
+
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(f) => panic!(f.to_string()),
+    };
+
+    let port: u16 = match matches.opt_get("port") {
+        Ok(Some(port)) => port,
+        Ok(None) => DEFAULT_PORT,
+        Err(_) => panic!("specified port not valid"),
+    };
+
+    let host: IpAddr = match matches.opt_get("host") {
+        Ok(Some(host)) => host,
+        Ok(None) => DEFAULT_HOST,
+        Err(_) => panic!("specific host was not valid socket address"),
+    };
+
+    let fullscreen: bool = matches.opt_present("fullscreen");
+
+    ClientOptions {
+        host,
+        port,
+        fullscreen,
     }
 }
