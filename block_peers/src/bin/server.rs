@@ -73,13 +73,7 @@ fn main() {
 
         match socket.receive::<ClientMessage>() {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
-                if !player.is_none() {
-                    debug!(
-                        "rejecting client {} since a game is already in progress",
-                        source_addr
-                    );
-                    socket.send(source_addr, &ServerMessage::Reject).unwrap();
-                } else {
+                if player.is_none() {
                     debug!("client at {:?} connected", source_addr);
                     let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
 
@@ -93,6 +87,12 @@ fn main() {
                         .unwrap();
 
                     player = Some((source_addr, grid));
+                } else {
+                    debug!(
+                        "rejecting client {} since a game is already in progress",
+                        source_addr
+                    );
+                    socket.send(source_addr, &ServerMessage::Reject).unwrap();
                 }
             }
             Ok(Some((_source_addr, ClientMessage::Command(command)))) => {
