@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 // Internal
 use block_peers::logging;
 use block_peers::render::Renderer;
-use block_peers::scene::Scene;
+use block_peers::scene::{AppLifecycleEvent, Scene};
 use block_peers::scenes::TitleScene;
 
 // Constants
@@ -79,7 +79,12 @@ pub fn main() {
                 | Event::KeyDown {
                     keycode: Some(Keycode::Q),
                     ..
-                } => break 'running,
+                } => {
+                    trace!("app asked to shutdown");
+                    scene.lifecycle(AppLifecycleEvent::Shutdown);
+                    break 'running;
+                }
+
                 event => {
                     scene = scene.input(event);
                 }
@@ -100,7 +105,7 @@ pub fn main() {
 
         fps += 1;
         if fps_timer.elapsed().as_millis() >= 1000 {
-            debug!("fps {} ups {}", fps, ups);
+            trace!("fps {} ups {}", fps, ups);
             fps = 0;
             ups = 0;
             fps_timer = Instant::now();
