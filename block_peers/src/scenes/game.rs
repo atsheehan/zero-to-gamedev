@@ -122,6 +122,10 @@ impl Scene for GameScene {
                 self.grid = grid.into_owned();
                 self
             }
+            Ok(Some((_source_addr, ServerMessage::Reject))) => {
+                error!("received reject message when not appropriate");
+                self
+            }
             Ok(None) => self,
             Err(_) => {
                 error!("received unknown message");
