@@ -66,8 +66,6 @@ pub fn main() {
     let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr, renderer.size()));
 
     'running: loop {
-        // Check network for events
-
         // Input
         for event in event_pump.poll_iter() {
             match event {

@@ -6,9 +6,10 @@ use std::net::SocketAddr;
 use crate::ai::DumbAI;
 use crate::grid::Grid;
 use crate::piece::Piece;
-use crate::render::{Dimensions, Image, Opacity, Position, Renderer, WindowSize};
+use crate::render::{Image, Opacity, Renderer, WindowSize};
 use crate::scene::Scene;
 use crate::scenes::ConnectScene;
+use crate::text::Text;
 
 pub struct TitleScene {
     server_addr: SocketAddr,
@@ -43,7 +44,6 @@ impl Scene for TitleScene {
                 keycode: Some(Keycode::Space),
                 ..
             } => Box::new(ConnectScene::new(self.server_addr)),
-
             _ => self,
         }
     }
@@ -52,9 +52,10 @@ impl Scene for TitleScene {
         self.ai.render(renderer);
         renderer.render_image(Image::Title, Rect::new(160, 120, 480, 64), Opacity::Opaque);
         renderer.render_text(
-            "Press Space",
-            Position::Center(400, 300),
-            Dimensions::Height(40),
+            Text::new("Press Space")
+                .center_xy(400, 300)
+                .height(40)
+                .build(),
         );
     }
 
