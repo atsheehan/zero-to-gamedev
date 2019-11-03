@@ -248,36 +248,6 @@ impl Grid {
                 }
             }
         }
-        self.clear_full_lines();
-    }
-
-    fn clear_full_lines(&mut self) {
-        let mut row: i32 = self.height as i32 - 1;
-
-        while row >= 0 {
-            let mut full_line = true;
-            for col in 0..self.width {
-                let cell = GridCell {
-                    col: col as i32,
-                    row: row,
-                };
-                full_line &= self.is_occupied(cell);
-            }
-
-            if full_line {
-                for col in 0..self.width {
-                    let cell = GridCell {
-                        col: col as i32,
-                        row: row,
-                    };
-                    let idx = self.cell_index(cell);
-                    self.cells[idx] = Brick::Empty;
-                }
-                self.move_bricks_down(row - 1);
-            }
-
-            row -= 1;
-        }
     }
 
     fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, opacity: Opacity) {
