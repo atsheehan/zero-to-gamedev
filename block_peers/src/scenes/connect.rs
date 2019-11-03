@@ -2,9 +2,10 @@ use sdl2::event::Event;
 use std::net::SocketAddr;
 
 use crate::net::{ClientMessage, ServerMessage, Socket};
-use crate::render::{Dimensions, Position, Renderer};
+use crate::render::Renderer;
 use crate::scene::Scene;
 use crate::scenes::GameScene;
+use crate::text::Text;
 
 pub struct ConnectScene {
     server_addr: SocketAddr,
@@ -31,16 +32,13 @@ impl Scene for ConnectScene {
 
     fn render(&self, renderer: &mut Renderer) {
         if self.was_rejected {
-            renderer.render_text(
-                "REJECTED",
-                Position::Center(400, 300),
-                Dimensions::Height(40),
-            );
+            renderer.render_text(Text::new("REJECTED").center_xy(400, 300).height(40).build());
         } else {
             renderer.render_text(
-                "Connecting to server...",
-                Position::Center(400, 300),
-                Dimensions::Height(40),
+                Text::new("Connecting to server...")
+                    .center_xy(400, 300)
+                    .height(40)
+                    .build(),
             );
         }
     }
