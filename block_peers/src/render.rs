@@ -180,7 +180,14 @@ impl<'ttf> Renderer<'ttf> {
             let texture = self
                 .canvas
                 .texture_creator()
-                .create_texture_from_surface(self.font.render(&text.raw).solid(text.color).unwrap())
+                .create_texture_from_surface(
+                    self.font
+                        .render(&text.raw)
+                        // We render all base fonts white and then apply a color mod for what color
+                        // it 'should' be rendered. This way we only need 1 texture per text.
+                        .solid(Color::RGB(255, 255, 255))
+                        .unwrap(),
+                )
                 .unwrap();
 
             self.string_textures.insert(key, texture);
