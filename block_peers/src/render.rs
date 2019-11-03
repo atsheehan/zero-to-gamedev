@@ -180,7 +180,7 @@ impl<'ttf> Renderer<'ttf> {
             let texture = self
                 .canvas
                 .texture_creator()
-                .create_texture_from_surface(self.font.render(text.raw).solid(text.color).unwrap())
+                .create_texture_from_surface(self.font.render(&text.raw).solid(text.color).unwrap())
                 .unwrap();
 
             self.string_textures.insert(key, texture);
@@ -188,8 +188,10 @@ impl<'ttf> Renderer<'ttf> {
 
         let texture = self
             .string_textures
-            .get(&key)
+            .get_mut(&key)
             .expect("text texture missing but should always be present");
+
+        texture.set_color_mod(text.color.r, text.color.g, text.color.b);
 
         self.canvas
             .copy(

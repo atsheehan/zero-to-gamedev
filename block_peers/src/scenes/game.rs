@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use crate::grid::{Grid, GridInputEvent};
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
-use crate::scene::Scene;
+use crate::scene::{AppLifecycleEvent, Scene};
 
 pub struct GameScene {
     grid: Grid,
@@ -24,6 +24,17 @@ impl GameScene {
 }
 
 impl Scene for GameScene {
+    fn lifecycle(&mut self, event: AppLifecycleEvent) {
+        match event {
+            AppLifecycleEvent::Shutdown => {
+                trace!("sending disconnect to the server");
+                self.socket
+                    .send(self.address, &ClientMessage::Disconnect)
+                    .unwrap();
+            }
+        }
+    }
+
     fn input(mut self: Box<Self>, event: Event) -> Box<dyn Scene> {
         match event {
             Event::KeyDown {
@@ -104,6 +115,10 @@ impl Scene for GameScene {
         match self.socket.receive::<ServerMessage>() {
             Ok(Some((_source_addr, ServerMessage::Sync { grid }))) => {
                 self.grid = grid.into_owned();
+                self
+            }
+            Ok(Some((_source_addr, ServerMessage::Reject))) => {
+                error!("received reject message when not appropriate");
                 self
             }
             Ok(None) => self,

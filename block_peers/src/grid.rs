@@ -108,11 +108,30 @@ impl Grid {
     }
 
     pub fn render(&self, renderer: &mut Renderer) {
-        // Render board background
+        // Render Background
+        let bg_color = Color::RGB(22, 22, 22);
+        let stripe_color = Color::RGB(36, 36, 36);
+
         renderer.fill_rect(
             Rect::new(0, 0, self.width * CELL_SIZE, self.height * CELL_SIZE),
-            Color::RGB(0, 0, 0),
+            bg_color,
         );
+        for i in 0..self.width {
+            let x = i * CELL_SIZE;
+
+            renderer.fill_rect(
+                Rect::new(x as i32, 0, 1, self.height * CELL_SIZE),
+                stripe_color,
+            );
+        }
+        for i in 0..self.height {
+            let y = i * CELL_SIZE;
+
+            renderer.fill_rect(
+                Rect::new(0, y as i32, self.width * CELL_SIZE, 1),
+                stripe_color,
+            );
+        }
 
         // Render occupied cells on the board
         for cell in self.grid_iterator() {
@@ -247,36 +266,6 @@ impl Grid {
                     self.cells[idx] = old_content;
                 }
             }
-        }
-        self.clear_full_lines();
-    }
-
-    fn clear_full_lines(&mut self) {
-        let mut row: i32 = self.height as i32 - 1;
-
-        while row >= 0 {
-            let mut full_line = true;
-            for col in 0..self.width {
-                let cell = GridCell {
-                    col: col as i32,
-                    row: row,
-                };
-                full_line &= self.is_occupied(cell);
-            }
-
-            if full_line {
-                for col in 0..self.width {
-                    let cell = GridCell {
-                        col: col as i32,
-                        row: row,
-                    };
-                    let idx = self.cell_index(cell);
-                    self.cells[idx] = Brick::Empty;
-                }
-                self.move_bricks_down(row - 1);
-            }
-
-            row -= 1;
         }
     }
 
