@@ -8,7 +8,7 @@ use crate::render::{Dimensions, Position};
 /// Renderer.
 #[derive(Debug)]
 pub struct Text {
-    pub raw: &'static str,
+    pub raw: String,
     pub position: Position,
     pub dimensions: Dimensions,
     pub color: Color,
@@ -17,7 +17,7 @@ pub struct Text {
 impl Text {
     pub fn new(raw: &'static str) -> Self {
         Self {
-            raw,
+            raw: String::from(raw),
             position: Position::LeftTop(0, 0),
             dimensions: Dimensions::Height(40),
             color: Color::RGB(255, 255, 255),
@@ -62,7 +62,7 @@ impl Text {
 
     pub fn build(&mut self) -> Self {
         Self {
-            raw: self.raw,
+            raw: self.raw.clone(),
             position: self.position,
             dimensions: self.dimensions,
             color: self.color,
@@ -73,8 +73,5 @@ impl Text {
 impl Hash for Text {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.raw.hash(state);
-        self.position.hash(state);
-        self.dimensions.hash(state);
-        self.color.hash(state);
     }
 }
