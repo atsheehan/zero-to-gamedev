@@ -7,7 +7,7 @@ use crate::ai::DumbAI;
 use crate::grid::Grid;
 use crate::piece::Piece;
 use crate::render::{Dimensions, Image, Opacity, Position, Renderer, WindowSize};
-use crate::scene::{AppLifecycleEvent, Scene};
+use crate::scene::Scene;
 use crate::scenes::ConnectScene;
 
 pub struct TitleScene {
@@ -37,8 +37,6 @@ impl TitleScene {
 }
 
 impl Scene for TitleScene {
-    fn lifecycle(&mut self, _event: AppLifecycleEvent) {}
-
     fn input(self: Box<Self>, event: Event) -> Box<dyn Scene> {
         match event {
             Event::KeyDown {

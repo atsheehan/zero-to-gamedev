@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
-use crate::scene::{AppLifecycleEvent, Scene};
+use crate::scene::Scene;
 use crate::scenes::GameScene;
 
 pub struct ConnectScene {
@@ -23,8 +23,6 @@ impl ConnectScene {
 }
 
 impl Scene for ConnectScene {
-    fn lifecycle(&mut self, _event: AppLifecycleEvent) {}
-
     fn input(self: Box<Self>, _event: Event) -> Box<dyn Scene> {
         self
     }

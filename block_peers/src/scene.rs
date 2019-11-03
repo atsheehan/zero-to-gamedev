@@ -9,7 +9,7 @@ pub enum AppLifecycleEvent {
 }
 
 pub trait Scene {
-    fn lifecycle(&mut self, event: AppLifecycleEvent);
+    fn lifecycle(&mut self, _event: AppLifecycleEvent) {}
     fn input(self: Box<Self>, event: Event) -> Box<dyn Scene>;
     fn render(&self, renderer: &mut Renderer);
     fn update(self: Box<Self>) -> Box<dyn Scene>;
