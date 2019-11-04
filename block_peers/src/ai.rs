@@ -47,6 +47,6 @@ impl DumbAI {
     }
 
     pub fn render(&self, renderer: &mut Renderer) {
-        self.grid.render(renderer);
+        self.grid.render(renderer, 0);
     }
 }

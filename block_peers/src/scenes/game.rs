@@ -99,7 +99,7 @@ impl Scene for GameScene {
 
     fn render(&self, renderer: &mut Renderer) {
         for player in &self.players {
-            player.grid.render(renderer);
+            player.grid.render(renderer, (player.id - 1) as i32 * 300);
         }
     }
 
