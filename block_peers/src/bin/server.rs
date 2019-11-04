@@ -32,18 +32,21 @@ fn main() {
     let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
     let mut previous_instant = Instant::now();
 
-    let mut connection: Option<(SocketAddr, Player)> = None;
+    let mut connection: Option<(SocketAddr, Vec<Player>)> = None;
 
     'running: loop {
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            if let Some((source_addr, ref mut player)) = connection {
-                player.grid.update();
+            if let Some((source_addr, ref mut players)) = connection {
+                for player in players.iter_mut() {
+                    player.grid.update();
+                }
+
                 socket
                     .send(
                         source_addr,
                         &ServerMessage::Sync {
-                            player: Cow::Borrowed(&player),
+                            players: Cow::Borrowed(&players),
                         },
                     )
                     .unwrap();
@@ -56,18 +59,21 @@ fn main() {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
                 if connection.is_none() {
                     debug!("client at {:?} connected", source_addr);
-                    let player = Player { id: 1, grid: Grid::new(GRID_HEIGHT, GRID_WIDTH) };
+                    let players = vec![
+                        Player { id: 1, grid: Grid::new(GRID_HEIGHT, GRID_WIDTH) },
+                        Player { id: 2, grid: Grid::new(GRID_HEIGHT, GRID_WIDTH) },
+                    ];
 
                     socket
                         .send(
                             source_addr,
                             &ServerMessage::Sync {
-                                player: Cow::Borrowed(&player),
+                                players: Cow::Borrowed(&players),
                             },
                         )
                         .unwrap();
 
-                    connection = Some((source_addr, player));
+                    connection = Some((source_addr, players));
                 } else {
                     debug!(
                         "rejecting client {} since a game is already in progress",
@@ -79,22 +85,22 @@ fn main() {
             Ok(Some((_source_addr, ClientMessage::Command(command)))) => {
                 trace!("server received command {:?}", command);
 
-                if let Some((_, ref mut player)) = connection {
+                if let Some((_, ref mut players)) = connection {
                     match command {
                         GridInputEvent::MoveLeft => {
-                            player.grid.move_piece_left();
+                            players[0].grid.move_piece_left();
                         }
                         GridInputEvent::MoveRight => {
-                            player.grid.move_piece_right();
+                            players[0].grid.move_piece_right();
                         }
                         GridInputEvent::MoveDown => {
-                            player.grid.move_piece_down();
+                            players[0].grid.move_piece_down();
                         }
                         GridInputEvent::ForceToBottom => {
-                            player.grid.move_piece_to_bottom();
+                            players[0].grid.move_piece_to_bottom();
                         }
                         GridInputEvent::Rotate => {
-                            player.grid.rotate();
+                            players[0].grid.rotate();
                         }
                     }
                 }

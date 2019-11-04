@@ -53,10 +53,10 @@ impl Scene for ConnectScene {
             .unwrap();
 
         match self.socket.receive::<ServerMessage>() {
-            Ok(Some((source_addr, ServerMessage::Sync { player }))) => {
+            Ok(Some((source_addr, ServerMessage::Sync { players }))) => {
                 debug!("connected to server at {:?}", source_addr);
                 Box::new(GameScene::new(
-                    player.into_owned(),
+                    players.into_owned(),
                     self.socket,
                     self.server_addr,
                 ))

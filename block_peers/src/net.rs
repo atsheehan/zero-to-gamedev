@@ -42,7 +42,7 @@ pub enum ServerMessage<'a> {
     // borrow the grid from server when it is writing the message, but
     // own the grid when the client receives and deserializes the
     // message. Cow lets us treat borrowed and owned data similarly
-    Sync { player: Cow<'a, Player> },
+    Sync { players: Cow<'a, Vec<Player>> },
     // Server already has a game going and therefore can't take anymore new connections
     Reject,
 }
