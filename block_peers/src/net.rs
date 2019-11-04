@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use std::io::{Error, ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
-use crate::grid::{Grid, GridInputEvent};
+use crate::grid::{Grid, GridInputEvent, Player};
 
 lazy_static! {
     static ref PROTOCOL_ID: u32 = {
@@ -42,7 +42,7 @@ pub enum ServerMessage<'a> {
     // borrow the grid from server when it is writing the message, but
     // own the grid when the client receives and deserializes the
     // message. Cow lets us treat borrowed and owned data similarly
-    Sync { grid: Cow<'a, Grid> },
+    Sync { player: Cow<'a, Player> },
     // Server already has a game going and therefore can't take anymore new connections
     Reject,
 }

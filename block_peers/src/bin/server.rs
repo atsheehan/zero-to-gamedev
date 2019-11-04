@@ -43,7 +43,7 @@ fn main() {
                     .send(
                         source_addr,
                         &ServerMessage::Sync {
-                            grid: Cow::Borrowed(&player.grid),
+                            player: Cow::Borrowed(&player),
                         },
                     )
                     .unwrap();
@@ -56,18 +56,18 @@ fn main() {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
                 if connection.is_none() {
                     debug!("client at {:?} connected", source_addr);
-                    let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
+                    let player = Player { id: 1, grid: Grid::new(GRID_HEIGHT, GRID_WIDTH) };
 
                     socket
                         .send(
                             source_addr,
                             &ServerMessage::Sync {
-                                grid: Cow::Borrowed(&grid),
+                                player: Cow::Borrowed(&player),
                             },
                         )
                         .unwrap();
 
-                    connection = Some((source_addr, Player { id: 1, grid }));
+                    connection = Some((source_addr, player));
                 } else {
                     debug!(
                         "rejecting client {} since a game is already in progress",

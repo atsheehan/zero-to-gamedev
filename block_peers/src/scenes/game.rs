@@ -14,9 +14,9 @@ pub struct GameScene {
 }
 
 impl GameScene {
-    pub fn new(grid: Grid, socket: Socket, address: SocketAddr) -> Self {
+    pub fn new(player: Player, socket: Socket, address: SocketAddr) -> Self {
         Self {
-            player: Player { id: 1, grid },
+            player,
             socket,
             address,
         }
@@ -103,8 +103,8 @@ impl Scene for GameScene {
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
         match self.socket.receive::<ServerMessage>() {
-            Ok(Some((_source_addr, ServerMessage::Sync { grid }))) => {
-                self.player = Player { id: 1, grid: grid.into_owned() };
+            Ok(Some((_source_addr, ServerMessage::Sync { player }))) => {
+                self.player = player.into_owned();
                 self
             }
             Ok(Some((_source_addr, ServerMessage::Reject))) => {

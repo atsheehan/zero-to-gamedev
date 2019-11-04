@@ -18,6 +18,7 @@ pub enum GridInputEvent {
     Rotate,
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Player {
     pub id: u32,
     pub grid: Grid,
