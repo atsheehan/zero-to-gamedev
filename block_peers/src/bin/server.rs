@@ -3,7 +3,7 @@ extern crate log;
 extern crate bincode;
 extern crate getopts;
 
-use block_peers::grid::{Grid, GridInputEvent};
+use block_peers::grid::{Grid, GridInputEvent, Player};
 use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 
@@ -32,18 +32,18 @@ fn main() {
     let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
     let mut previous_instant = Instant::now();
 
-    let mut player: Option<(SocketAddr, Grid)> = None;
+    let mut connection: Option<(SocketAddr, Player)> = None;
 
     'running: loop {
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            if let Some((source_addr, ref mut grid)) = player {
-                grid.update();
+            if let Some((source_addr, ref mut player)) = connection {
+                player.grid.update();
                 socket
                     .send(
                         source_addr,
                         &ServerMessage::Sync {
-                            grid: Cow::Borrowed(grid),
+                            grid: Cow::Borrowed(&player.grid),
                         },
                     )
                     .unwrap();
@@ -54,7 +54,7 @@ fn main() {
 
         match socket.receive::<ClientMessage>() {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
-                if player.is_none() {
+                if connection.is_none() {
                     debug!("client at {:?} connected", source_addr);
                     let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
 
@@ -67,7 +67,7 @@ fn main() {
                         )
                         .unwrap();
 
-                    player = Some((source_addr, grid));
+                    connection = Some((source_addr, Player { id: 1, grid }));
                 } else {
                     debug!(
                         "rejecting client {} since a game is already in progress",
@@ -79,22 +79,22 @@ fn main() {
             Ok(Some((_source_addr, ClientMessage::Command(command)))) => {
                 trace!("server received command {:?}", command);
 
-                if let Some((_, ref mut grid)) = player {
+                if let Some((_, ref mut player)) = connection {
                     match command {
                         GridInputEvent::MoveLeft => {
-                            grid.move_piece_left();
+                            player.grid.move_piece_left();
                         }
                         GridInputEvent::MoveRight => {
-                            grid.move_piece_right();
+                            player.grid.move_piece_right();
                         }
                         GridInputEvent::MoveDown => {
-                            grid.move_piece_down();
+                            player.grid.move_piece_down();
                         }
                         GridInputEvent::ForceToBottom => {
-                            grid.move_piece_to_bottom();
+                            player.grid.move_piece_to_bottom();
                         }
                         GridInputEvent::Rotate => {
-                            grid.rotate();
+                            player.grid.rotate();
                         }
                     }
                 }

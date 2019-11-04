@@ -2,13 +2,13 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::net::SocketAddr;
 
-use crate::grid::{Grid, GridInputEvent};
+use crate::grid::{Grid, GridInputEvent, Player};
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
 use crate::scene::{AppLifecycleEvent, Scene};
 
 pub struct GameScene {
-    grid: Grid,
+    player: Player,
     socket: Socket,
     address: SocketAddr,
 }
@@ -16,7 +16,7 @@ pub struct GameScene {
 impl GameScene {
     pub fn new(grid: Grid, socket: Socket, address: SocketAddr) -> Self {
         Self {
-            grid,
+            player: Player { id: 1, grid },
             socket,
             address,
         }
@@ -98,23 +98,13 @@ impl Scene for GameScene {
     }
 
     fn render(&self, renderer: &mut Renderer) {
-        self.grid.render(renderer);
+        self.player.grid.render(renderer);
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
-        /*
-        self.grid.update();
-
-        if self.grid.gameover {
-            return Box::new(GameOverScene::new());
-        }
-
-        self
-        */
-
         match self.socket.receive::<ServerMessage>() {
             Ok(Some((_source_addr, ServerMessage::Sync { grid }))) => {
-                self.grid = grid.into_owned();
+                self.player = Player { id: 1, grid: grid.into_owned() };
                 self
             }
             Ok(Some((_source_addr, ServerMessage::Reject))) => {
