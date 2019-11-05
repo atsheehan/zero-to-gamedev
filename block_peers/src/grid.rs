@@ -19,12 +19,6 @@ pub enum GridInputEvent {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Player {
-    pub id: u32,
-    pub grid: Grid,
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Grid {
     height: u32,
     width: u32,

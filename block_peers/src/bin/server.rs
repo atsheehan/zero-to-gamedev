@@ -3,7 +3,7 @@ extern crate log;
 extern crate bincode;
 extern crate getopts;
 
-use block_peers::grid::{Grid, GridInputEvent, Player};
+use block_peers::grid::{Grid, GridInputEvent};
 use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 
@@ -32,21 +32,21 @@ fn main() {
     let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
     let mut previous_instant = Instant::now();
 
-    let mut connection: Option<(SocketAddr, Vec<Player>)> = None;
+    let mut connection: Option<(SocketAddr, Vec<Grid>)> = None;
 
     'running: loop {
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            if let Some((source_addr, ref mut players)) = connection {
-                for player in players.iter_mut() {
-                    player.grid.update();
+            if let Some((source_addr, ref mut grids)) = connection {
+                for grid in grids.iter_mut() {
+                    grid.update();
                 }
 
                 socket
                     .send(
                         source_addr,
                         &ServerMessage::Sync {
-                            players: Cow::Borrowed(&players),
+                            grids: Cow::Borrowed(&grids),
                         },
                     )
                     .unwrap();
@@ -59,21 +59,21 @@ fn main() {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
                 if connection.is_none() {
                     debug!("client at {:?} connected", source_addr);
-                    let players = vec![
-                        Player { id: 1, grid: Grid::new(GRID_HEIGHT, GRID_WIDTH) },
-                        Player { id: 2, grid: Grid::new(GRID_HEIGHT, GRID_WIDTH) },
+                    let grids = vec![
+                        Grid::new(GRID_HEIGHT, GRID_WIDTH),
+                        Grid::new(GRID_HEIGHT, GRID_WIDTH),
                     ];
 
                     socket
                         .send(
                             source_addr,
                             &ServerMessage::Sync {
-                                players: Cow::Borrowed(&players),
+                                grids: Cow::Borrowed(&grids),
                             },
                         )
                         .unwrap();
 
-                    connection = Some((source_addr, players));
+                    connection = Some((source_addr, grids));
                 } else {
                     debug!(
                         "rejecting client {} since a game is already in progress",
@@ -85,22 +85,22 @@ fn main() {
             Ok(Some((_source_addr, ClientMessage::Command { player_id, event }))) => {
                 trace!("server received command {:?}", event);
 
-                if let Some((_, ref mut players)) = connection {
+                if let Some((_, ref mut grids)) = connection {
                     match event {
                         GridInputEvent::MoveLeft => {
-                            players[player_id as usize].grid.move_piece_left();
+                            grids[player_id as usize].move_piece_left();
                         }
                         GridInputEvent::MoveRight => {
-                            players[player_id as usize].grid.move_piece_right();
+                            grids[player_id as usize].move_piece_right();
                         }
                         GridInputEvent::MoveDown => {
-                            players[player_id as usize].grid.move_piece_down();
+                            grids[player_id as usize].move_piece_down();
                         }
                         GridInputEvent::ForceToBottom => {
-                            players[player_id as usize].grid.move_piece_to_bottom();
+                            grids[player_id as usize].move_piece_to_bottom();
                         }
                         GridInputEvent::Rotate => {
-                            players[player_id as usize].grid.rotate();
+                            grids[player_id as usize].rotate();
                         }
                     }
                 }
