@@ -1,6 +1,7 @@
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
+use std::collections::HashMap;
 use std::borrow::Cow;
 use std::io::{Error, ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
@@ -51,9 +52,15 @@ pub enum ServerMessage<'a> {
 // Socket
 // -------
 
+pub enum Connection {
+    Initiated,
+    Open,
+}
+
 pub struct Socket {
     socket: UdpSocket,
     buffer: [u8; BUFFER_SIZE],
+    connections: HashMap<SocketAddr, Connection>,
 }
 
 impl Socket {
@@ -68,7 +75,8 @@ impl Socket {
         socket.set_nonblocking(true)?;
 
         let buffer = [0; BUFFER_SIZE];
-        Ok(Socket { socket, buffer })
+        let connections = HashMap::new();
+        Ok(Socket { socket, buffer, connections })
     }
 
     pub fn receive<D: DeserializeOwned>(&mut self) -> Result<Option<(SocketAddr, D)>> {
