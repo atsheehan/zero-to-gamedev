@@ -44,7 +44,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::MoveLeft),
+                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::MoveLeft },
                     )
                     .unwrap();
             }
@@ -55,7 +55,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::MoveRight),
+                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::MoveRight },
                     )
                     .unwrap();
             }
@@ -66,7 +66,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::MoveDown),
+                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::MoveDown },
                     )
                     .unwrap();
             }
@@ -77,7 +77,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::ForceToBottom),
+                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::ForceToBottom },
                     )
                     .unwrap();
             }
@@ -88,7 +88,62 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::Rotate),
+                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::Rotate },
+                    )
+                    .unwrap();
+            },
+            Event::KeyDown {
+                keycode: Some(Keycode::J),
+                ..
+            } => {
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::MoveLeft },
+                    )
+                    .unwrap();
+            }
+            Event::KeyDown {
+                keycode: Some(Keycode::L),
+                ..
+            } => {
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::MoveRight },
+                    )
+                    .unwrap();
+            }
+            Event::KeyDown {
+                keycode: Some(Keycode::K),
+                ..
+            } => {
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::MoveDown },
+                    )
+                    .unwrap();
+            }
+            Event::KeyDown {
+                keycode: Some(Keycode::I),
+                ..
+            } => {
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::ForceToBottom },
+                    )
+                    .unwrap();
+            }
+            Event::KeyDown {
+                keycode: Some(Keycode::O),
+                ..
+            } => {
+                self.socket
+                    .send(
+                        self.address,
+                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::Rotate },
                     )
                     .unwrap();
             }

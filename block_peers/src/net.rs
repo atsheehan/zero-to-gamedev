@@ -32,7 +32,7 @@ const PROTOCOL_VERSION: u32 = 1;
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     Connect,
-    Command(GridInputEvent),
+    Command { player_id: u32, event: GridInputEvent },
     Disconnect,
 }
 

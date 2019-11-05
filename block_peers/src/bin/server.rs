@@ -82,25 +82,25 @@ fn main() {
                     socket.send(source_addr, &ServerMessage::Reject).unwrap();
                 }
             }
-            Ok(Some((_source_addr, ClientMessage::Command(command)))) => {
-                trace!("server received command {:?}", command);
+            Ok(Some((_source_addr, ClientMessage::Command { player_id, event }))) => {
+                trace!("server received command {:?}", event);
 
                 if let Some((_, ref mut players)) = connection {
-                    match command {
+                    match event {
                         GridInputEvent::MoveLeft => {
-                            players[0].grid.move_piece_left();
+                            players[player_id as usize].grid.move_piece_left();
                         }
                         GridInputEvent::MoveRight => {
-                            players[0].grid.move_piece_right();
+                            players[player_id as usize].grid.move_piece_right();
                         }
                         GridInputEvent::MoveDown => {
-                            players[0].grid.move_piece_down();
+                            players[player_id as usize].grid.move_piece_down();
                         }
                         GridInputEvent::ForceToBottom => {
-                            players[0].grid.move_piece_to_bottom();
+                            players[player_id as usize].grid.move_piece_to_bottom();
                         }
                         GridInputEvent::Rotate => {
-                            players[0].grid.rotate();
+                            players[player_id as usize].grid.rotate();
                         }
                     }
                 }
