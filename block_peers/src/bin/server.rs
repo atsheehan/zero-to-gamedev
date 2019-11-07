@@ -22,6 +22,11 @@ const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
 
+struct Client {
+    salt: u64,
+    address: SocketAddr,
+}
+
 fn main() {
     logging::init();
     let options = get_options();
@@ -73,7 +78,9 @@ fn main() {
                         "rejecting client {} since a game is already in progress",
                         source_addr
                     );
-                    socket.send(source_addr, &ServerMessage::Reject).unwrap();
+                    socket
+                        .send(source_addr, &ServerMessage::ConnectionRejected)
+                        .unwrap();
                 }
             }
             Ok(Some((_source_addr, ClientMessage::Command(command)))) => {

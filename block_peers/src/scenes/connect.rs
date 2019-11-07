@@ -7,10 +7,28 @@ use crate::scene::Scene;
 use crate::scenes::GameScene;
 use crate::text::Text;
 
+// ~10 seconds at 60 fps
+const MAX_CONNECTION_ATTEMPTS: u64 = 600;
+
+enum ConnectionState {
+    // We're currently trying to connect to he server
+    SendingConnectionRequest,
+    // We've reached the server but need to finish the secret handshake
+    SendingChallengeResponse,
+
+    // Disconnected,
+    // We've been rejected because a game is already going
+    Rejected,
+    // We've tried connecting to the server for X seconds but have been unable to reach.
+    TimedOut,
+}
+
 pub struct ConnectScene {
     server_addr: SocketAddr,
     socket: Socket,
-    was_rejected: bool,
+
+    state: ConnectionState,
+    connection_attempt_counter: u64,
 }
 
 impl ConnectScene {
@@ -20,8 +38,24 @@ impl ConnectScene {
         Self {
             server_addr,
             socket,
-            was_rejected: false,
+            state: ConnectionState::SendingConnectionRequest,
+            connection_attempt_counter: 0,
         }
+    }
+
+    fn dots(&self) -> String {
+        let num_dots = lerp(
+            1f32,
+            20f32,
+            (self.connection_attempt_counter as f32 / MAX_CONNECTION_ATTEMPTS as f32) as f32,
+        ) as u64;
+
+        let mut s = String::new();
+        for _ in 0..num_dots {
+            s.push_str(".");
+        }
+
+        s
     }
 }
 
@@ -31,26 +65,49 @@ impl Scene for ConnectScene {
     }
 
     fn render(&self, renderer: &mut Renderer) {
-        if self.was_rejected {
-            renderer.render_text(Text::new("REJECTED").center_xy(400, 300).height(40).build());
-        } else {
-            renderer.render_text(
-                Text::new("Connecting to server...")
-                    .center_xy(400, 300)
-                    .height(40)
-                    .build(),
-            );
+        let message: &'static str;
+
+        match self.state {
+            ConnectionState::SendingConnectionRequest => {
+                message = "Connecting to server";
+                renderer.render_text(
+                    Text::from(self.dots())
+                        .center_xy(400, 340)
+                        .height(40)
+                        .build(),
+                );
+            }
+            ConnectionState::TimedOut => {
+                message = "Timed Out";
+            }
+            ConnectionState::Rejected => {
+                message = "REJECTED";
+            }
+            _ => {
+                message = "Unhandled State";
+            }
         }
+
+        renderer.render_text(Text::new(message).center_xy(400, 300).height(40).build());
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
-        if self.was_rejected {
+        if self.connection_attempt_counter >= MAX_CONNECTION_ATTEMPTS {
+            self.state = ConnectionState::TimedOut;
             return self;
         }
 
-        self.socket
-            .send(self.server_addr, &ClientMessage::Connect)
-            .unwrap();
+        match self.state {
+            ConnectionState::SendingConnectionRequest => {
+                self.socket
+                    .send(self.server_addr, &ClientMessage::Connect)
+                    .unwrap();
+                self.connection_attempt_counter += 1;
+            }
+            _ => {
+                debug!("other");
+            }
+        }
 
         match self.socket.receive::<ServerMessage>() {
             Ok(Some((source_addr, ServerMessage::Sync { grid }))) => {
@@ -61,9 +118,13 @@ impl Scene for ConnectScene {
                     self.server_addr,
                 ))
             }
-            Ok(Some((source_addr, ServerMessage::Reject))) => {
+            Ok(Some((source_addr, ServerMessage::ConnectionAccepted))) => {
+                debug!("connection accepted for client {}", source_addr);
+                self
+            }
+            Ok(Some((source_addr, ServerMessage::ConnectionRejected))) => {
                 error!("client {} was rejected!", source_addr);
-                self.was_rejected = true;
+                self.state = ConnectionState::Rejected;
                 self
             }
             Ok(None) => self,
@@ -73,4 +134,8 @@ impl Scene for ConnectScene {
             }
         }
     }
+}
+
+fn lerp(start: f32, end: f32, time: f32) -> f32 {
+    start * (1f32 - time) + end * time
 }
