@@ -154,6 +154,12 @@ impl Grid {
 
         // Render ghost piece
         let mut ghost_piece = self.current_piece.move_down();
+
+        // If we're already at the bottom row, we'll have moved off the grid - just return.
+        if !self.does_piece_fit(&ghost_piece) {
+            return
+        }
+
         let mut next_ghost_piece = ghost_piece.move_down();
 
         while self.does_piece_fit(&next_ghost_piece) {
