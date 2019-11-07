@@ -41,14 +41,17 @@ fn main() {
     // grids. I tried to combine the addr and grid into a single
     // struct, but I couldn't figure out how to extract just the grids
     // for the ServerMessage::Sync message.
+    //
+    // The player_id is the index into each list (so it should be
+    // either 0 or 1 for a 2-player game).
     let mut game: Option<(Vec<SocketAddr>, Vec<Grid>)> = None;
 
     'running: loop {
-        if game.is_none() && connections.len() >= 2 {}
-
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
             match game {
+                // If there is an active game, update the grids each
+                // tick and sync the state to each client.
                 Some((ref client_addrs, ref mut grids)) => {
                     for grid in grids.iter_mut() {
                         grid.update();
@@ -63,6 +66,10 @@ fn main() {
                         socket.send(addr, &message).unwrap();
                     }
                 }
+                // If there isn't an active game, check if we have at
+                // least two clients connected and create a new game
+                // state. The next tick will send the game state to
+                // the clients.
                 None => {
                     if connections.len() >= 2 {
                         let clients = connections.iter().cloned().take(2).collect();
@@ -92,8 +99,12 @@ fn main() {
             Ok(Some((source_addr, ClientMessage::Command { player_id, event }))) => {
                 trace!("server received command {:?}", event);
 
+                // If there's an active game...
                 if let Some((ref client_addrs, ref mut grids)) = game {
                     let player_id = player_id as usize;
+
+                    // Check the specified player_id lines up with the
+                    // source addr before taking any action
                     if player_id < client_addrs.len() && client_addrs[player_id] == source_addr {
                         match event {
                             GridInputEvent::MoveLeft => {
