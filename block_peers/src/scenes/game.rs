@@ -171,6 +171,10 @@ impl Scene for GameScene {
                 self
             }
             Ok(None) => self,
+            Ok(Some((_source_addr, message))) => {
+                debug!("received unexpected message: {:?}", message);
+                self
+            }
             Err(_) => {
                 error!("received unknown message");
                 panic!("expected game state to be given from server on init")

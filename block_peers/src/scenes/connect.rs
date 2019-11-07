@@ -64,34 +64,55 @@ impl Scene for ConnectScene {
             }
             ConnectionState::Initiated => {
                 // wait for connected message, transition to connected
+                match self.socket.receive::<ServerMessage>() {
+                    Ok(Some((source_addr, ServerMessage::Connected { player_id }))) => {
+                        debug!("connected to server at {:?}", source_addr);
+                        self.state = ConnectionState::Connected { player_id };
+                    }
+                    Ok(Some((source_addr, ServerMessage::Reject))) => {
+                        error!("client {} was rejected!", source_addr);
+                        self.state = ConnectionState::Rejected;
+                    }
+                    Ok(None) => {},
+                    Ok(Some((_source_addr, message))) => {
+                        debug!("received unexpected message: {:?}", message);
+                    }
+                    Err(_) => {
+                        error!("received unknown message");
+                        panic!("expected game state to be given from server on init");
+                    }
+                }
             }
             ConnectionState::Connected { player_id } => {
                 // wait for sync message, transition to new game state
+                match self.socket.receive::<ServerMessage>() {
+                    Ok(Some((source_addr, ServerMessage::Sync { grids }))) => {
+                        debug!("connected to server at {:?}", source_addr);
+                        return Box::new(GameScene::new(
+                            grids.into_owned(),
+                            self.socket,
+                            self.server_addr,
+                        ));
+                    }
+                    Ok(Some((source_addr, ServerMessage::Reject))) => {
+                        error!("client {} was rejected!", source_addr);
+                        self.state = ConnectionState::Rejected;
+                    }
+                    Ok(None) => {},
+                    Ok(Some((_source_addr, message))) => {
+                        debug!("received unexpected message: {:?}", message);
+                    }
+                    Err(_) => {
+                        error!("received unknown message");
+                        panic!("expected game state to be given from server on init");
+                    }
+                }
             }
             ConnectionState::Rejected => {
                 // exit early, maybe retry after some time
             }
         }
 
-        match self.socket.receive::<ServerMessage>() {
-            Ok(Some((source_addr, ServerMessage::Sync { grids }))) => {
-                debug!("connected to server at {:?}", source_addr);
-                Box::new(GameScene::new(
-                    grids.into_owned(),
-                    self.socket,
-                    self.server_addr,
-                ))
-            }
-            Ok(Some((source_addr, ServerMessage::Reject))) => {
-                error!("client {} was rejected!", source_addr);
-                self.state = ConnectionState::Rejected;
-                self
-            }
-            Ok(None) => self,
-            Err(_) => {
-                error!("received unknown message");
-                panic!("expected game state to be given from server on init")
-            }
-        }
+        self
     }
 }

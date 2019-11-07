@@ -67,6 +67,15 @@ fn main() {
                     socket
                         .send(
                             source_addr,
+                            &ServerMessage::Connected {
+                                player_id: 0,
+                            },
+                        )
+                        .unwrap();
+
+                    socket
+                        .send(
+                            source_addr,
                             &ServerMessage::Sync {
                                 grids: Cow::Borrowed(&grids),
                             },
