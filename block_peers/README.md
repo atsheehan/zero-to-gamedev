@@ -21,6 +21,13 @@ $ cargo run --bin server
 $ cargo run --bin client
 ```
 
+Additionally, you may need to install the `sdl` libraries to compile the binaries.
+For macOS, the libraries are available via homebrew:
+
+```sh
+$ brew install sdl sdl_ttf sdl_image
+```
+
 ## Iteration 1 - Basic Mechanics
 
 This deliverable defines the basic mechanics of controlling the active piece and attaching bricks to the grid.
