@@ -16,7 +16,7 @@ pub struct ConnectScene {
 enum ConnectionState {
     NotStarted,
     Initiated,
-    Connected { player_id: u32 },
+    Connected,
     Rejected,
 }
 
@@ -42,6 +42,9 @@ impl Scene for ConnectScene {
             ConnectionState::Rejected => {
                 renderer.render_text(Text::new("REJECTED").center_xy(400, 300).height(40).build());
             },
+            ConnectionState::Connected => {
+                renderer.render_text(Text::new("Connected, waiting for game to start...").center_xy(400, 300).height(40).build());
+            },
             _ => {
                 renderer.render_text(
                     Text::new("Connecting to server...")
@@ -65,9 +68,9 @@ impl Scene for ConnectScene {
             ConnectionState::Initiated => {
                 // wait for connected message, transition to connected
                 match self.socket.receive::<ServerMessage>() {
-                    Ok(Some((source_addr, ServerMessage::Connected { player_id }))) => {
+                    Ok(Some((source_addr, ServerMessage::Connected))) => {
                         debug!("connected to server at {:?}", source_addr);
-                        self.state = ConnectionState::Connected { player_id };
+                        self.state = ConnectionState::Connected;
                     }
                     Ok(Some((source_addr, ServerMessage::Reject))) => {
                         error!("client {} was rejected!", source_addr);
@@ -83,7 +86,7 @@ impl Scene for ConnectScene {
                     }
                 }
             }
-            ConnectionState::Connected { player_id } => {
+            ConnectionState::Connected => {
                 // wait for sync message, transition to new game state
                 match self.socket.receive::<ServerMessage>() {
                     Ok(Some((source_addr, ServerMessage::Sync { grids }))) => {

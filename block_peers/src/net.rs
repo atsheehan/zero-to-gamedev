@@ -46,7 +46,7 @@ pub enum ServerMessage<'a> {
     Sync { grids: Cow<'a, Vec<Grid>> },
     // Server already has a game going and therefore can't take anymore new connections
     Reject,
-    Connected { player_id: u32 },
+    Connected,
 }
 
 // -------
