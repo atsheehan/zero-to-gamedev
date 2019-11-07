@@ -111,7 +111,7 @@ impl Scene for GameScene {
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
         match self.socket.receive::<ServerMessage>() {
-            Ok(Some((_source_addr, ServerMessage::Sync { player_id, grids }))) => {
+            Ok(Some((_source_addr, ServerMessage::Sync { player_id: _, grids }))) => {
                 self.grids = grids.into_owned();
                 self
             }

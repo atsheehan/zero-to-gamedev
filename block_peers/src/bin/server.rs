@@ -33,9 +33,14 @@ fn main() {
     let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
     let mut previous_instant = Instant::now();
 
-    let mut connection: Option<(SocketAddr, Vec<Grid>)> = None;
-
+    // Connections holds a list of clients connected, and when there
+    // are at least 2 clients connected it will start the game.
     let mut connections = HashSet::<SocketAddr>::new();
+
+    // The running game state: a list of player addrs and a list of
+    // grids. I tried to combine the addr and grid into a single
+    // struct, but I couldn't figure out how to extract just the grids
+    // for the ServerMessage::Sync message.
     let mut game: Option<(Vec<SocketAddr>, Vec<Grid>)> = None;
 
     'running: loop {
