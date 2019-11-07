@@ -8,14 +8,16 @@ use crate::render::Renderer;
 use crate::scene::{AppLifecycleEvent, Scene};
 
 pub struct GameScene {
+    player_id: u32,
     grids: Vec<Grid>,
     socket: Socket,
     address: SocketAddr,
 }
 
 impl GameScene {
-    pub fn new(grids: Vec<Grid>, socket: Socket, address: SocketAddr) -> Self {
+    pub fn new(player_id: u32, grids: Vec<Grid>, socket: Socket, address: SocketAddr) -> Self {
         Self {
+            player_id,
             grids,
             socket,
             address,
@@ -36,6 +38,8 @@ impl Scene for GameScene {
     }
 
     fn input(mut self: Box<Self>, event: Event) -> Box<dyn Scene> {
+        let player_id = self.player_id;
+
         match event {
             Event::KeyDown {
                 keycode: Some(Keycode::A),
@@ -44,7 +48,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::MoveLeft },
+                        &ClientMessage::Command { player_id, event: GridInputEvent::MoveLeft },
                     )
                     .unwrap();
             }
@@ -55,7 +59,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::MoveRight },
+                        &ClientMessage::Command { player_id, event: GridInputEvent::MoveRight },
                     )
                     .unwrap();
             }
@@ -66,7 +70,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::MoveDown },
+                        &ClientMessage::Command { player_id, event: GridInputEvent::MoveDown },
                     )
                     .unwrap();
             }
@@ -77,7 +81,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::ForceToBottom },
+                        &ClientMessage::Command { player_id, event: GridInputEvent::ForceToBottom },
                     )
                     .unwrap();
             }
@@ -88,62 +92,7 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command { player_id: 0, event: GridInputEvent::Rotate },
-                    )
-                    .unwrap();
-            },
-            Event::KeyDown {
-                keycode: Some(Keycode::J),
-                ..
-            } => {
-                self.socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::MoveLeft },
-                    )
-                    .unwrap();
-            }
-            Event::KeyDown {
-                keycode: Some(Keycode::L),
-                ..
-            } => {
-                self.socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::MoveRight },
-                    )
-                    .unwrap();
-            }
-            Event::KeyDown {
-                keycode: Some(Keycode::K),
-                ..
-            } => {
-                self.socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::MoveDown },
-                    )
-                    .unwrap();
-            }
-            Event::KeyDown {
-                keycode: Some(Keycode::I),
-                ..
-            } => {
-                self.socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::ForceToBottom },
-                    )
-                    .unwrap();
-            }
-            Event::KeyDown {
-                keycode: Some(Keycode::O),
-                ..
-            } => {
-                self.socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command { player_id: 1, event: GridInputEvent::Rotate },
+                        &ClientMessage::Command { player_id, event: GridInputEvent::Rotate },
                     )
                     .unwrap();
             }
@@ -162,7 +111,7 @@ impl Scene for GameScene {
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
         match self.socket.receive::<ServerMessage>() {
-            Ok(Some((_source_addr, ServerMessage::Sync { grids }))) => {
+            Ok(Some((_source_addr, ServerMessage::Sync { player_id, grids }))) => {
                 self.grids = grids.into_owned();
                 self
             }

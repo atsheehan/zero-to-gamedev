@@ -23,11 +23,6 @@ const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
 
-struct Player {
-    grid: Grid,
-    addr: SocketAddr,
-}
-
 fn main() {
     logging::init();
     let options = get_options();
@@ -39,25 +34,39 @@ fn main() {
     let mut previous_instant = Instant::now();
 
     let mut connection: Option<(SocketAddr, Vec<Grid>)> = None;
+
     let mut connections = HashSet::<SocketAddr>::new();
-    let mut game: Option<Vec<Player>> = None;
+    let mut game: Option<(Vec<SocketAddr>, Vec<Grid>)> = None;
 
     'running: loop {
+        if game.is_none() && connections.len() >= 2 {
+        }
+
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            if let Some((source_addr, ref mut grids)) = connection {
-                for grid in grids.iter_mut() {
-                    grid.update();
-                }
+            match game {
+                Some((ref client_addrs, ref mut grids)) => {
+                    for grid in grids.iter_mut() {
+                        grid.update();
+                    }
 
-                socket
-                    .send(
-                        source_addr,
-                        &ServerMessage::Sync {
-                            grids: Cow::Borrowed(&grids),
-                        },
-                    )
-                    .unwrap();
+                    for (player_id, addr) in client_addrs.iter().enumerate() {
+                        let player_id = player_id as u32;
+                        let message = ServerMessage::Sync { player_id, grids: Cow::Borrowed(&grids) };
+                        socket.send(addr, &message).unwrap();
+                    }
+                }
+                None => {
+                    if connections.len() >= 2 {
+                        let clients = connections.iter().cloned().take(2).collect();
+                        let grids = vec![
+                            Grid::new(GRID_HEIGHT, GRID_WIDTH),
+                            Grid::new(GRID_HEIGHT, GRID_WIDTH),
+                        ];
+
+                        game = Some((clients, grids));
+                    }
+                }
             }
 
             previous_instant += tick_duration;
@@ -80,63 +89,31 @@ fn main() {
                     }
                 }
             }
-
-            //     if connection.is_none() {
-            //         debug!("client at {:?} connected", source_addr);
-            //         let grids = vec![
-            //             Grid::new(GRID_HEIGHT, GRID_WIDTH),
-            //             Grid::new(GRID_HEIGHT, GRID_WIDTH),
-            //         ];
-
-            //         socket
-            //             .send(
-            //                 source_addr,
-            //                 &ServerMessage::Connected {
-            //                     player_id: 0,
-            //                 },
-            //             )
-            //             .unwrap();
-
-            //         socket
-            //             .send(
-            //                 source_addr,
-            //                 &ServerMessage::Sync {
-            //                     grids: Cow::Borrowed(&grids),
-            //                 },
-            //             )
-            //             .unwrap();
-
-            //         connection = Some((source_addr, grids));
-            //     } else {
-            //         debug!(
-            //             "rejecting client {} since a game is already in progress",
-            //             source_addr
-            //         );
-            //         socket.send(source_addr, &ServerMessage::Reject).unwrap();
-            //     }
-            // }
-            Ok(Some((_source_addr, ClientMessage::Command { player_id, event }))) => {
+            Ok(Some((source_addr, ClientMessage::Command { player_id, event }))) => {
                 trace!("server received command {:?}", event);
 
-                // if let Some((_, ref mut grids)) = connection {
-                //     match event {
-                //         GridInputEvent::MoveLeft => {
-                //             grids[player_id as usize].move_piece_left();
-                //         }
-                //         GridInputEvent::MoveRight => {
-                //             grids[player_id as usize].move_piece_right();
-                //         }
-                //         GridInputEvent::MoveDown => {
-                //             grids[player_id as usize].move_piece_down();
-                //         }
-                //         GridInputEvent::ForceToBottom => {
-                //             grids[player_id as usize].move_piece_to_bottom();
-                //         }
-                //         GridInputEvent::Rotate => {
-                //             grids[player_id as usize].rotate();
-                //         }
-                //     }
-                // }
+                if let Some((ref client_addrs, ref mut grids)) = game {
+                    let player_id = player_id as usize;
+                    if player_id < client_addrs.len() && client_addrs[player_id] == source_addr {
+                        match event {
+                            GridInputEvent::MoveLeft => {
+                                grids[player_id].move_piece_left();
+                            }
+                            GridInputEvent::MoveRight => {
+                                grids[player_id].move_piece_right();
+                            }
+                            GridInputEvent::MoveDown => {
+                                grids[player_id].move_piece_down();
+                            }
+                            GridInputEvent::ForceToBottom => {
+                                grids[player_id].move_piece_to_bottom();
+                            }
+                            GridInputEvent::Rotate => {
+                                grids[player_id].rotate();
+                            }
+                        }
+                    }
+                }
             }
             Ok(Some((source_addr, ClientMessage::Disconnect))) => {
                 trace!("client {} requested to disconnect", source_addr);
