@@ -8,6 +8,7 @@ use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 
 use getopts::Options;
+use rand::Rng;
 use std::borrow::Cow;
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -22,9 +23,31 @@ const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
 
+const MAX_CLIENTS: usize = 1;
+
 struct Client {
-    salt: u64,
     address: SocketAddr,
+    challenge_confirmed: bool,
+    salt: u64,
+    // port?
+    // state?
+    // grid: Grid,
+}
+
+impl Client {
+    pub fn new(address: SocketAddr) -> Self {
+        let mut rng = rand::thread_rng();
+        let salt = rng.gen_range(0, std::u64::MAX);
+
+        // generate salt
+        // create new grid
+        // challenge confirmed no
+        Self {
+            address,
+            salt,
+            challenge_confirmed: false,
+        }
+    }
 }
 
 fn main() {
@@ -38,6 +61,7 @@ fn main() {
     let mut previous_instant = Instant::now();
 
     let mut player: Option<(SocketAddr, Grid)> = None;
+    let mut connections: Vec<Client> = Vec::new();
 
     'running: loop {
         let current_instant = Instant::now();
@@ -54,37 +78,77 @@ fn main() {
                     .unwrap();
             }
 
+            // TODO: for each confirmed client, update the grid and send sync message
+
             previous_instant += tick_duration;
         }
 
         match socket.receive::<ClientMessage>() {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
-                if player.is_none() {
-                    debug!("client at {:?} connected", source_addr);
-                    let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
+                let mut found_client = false;
+                for client in connections.iter() {
+                    if client.address == source_addr {
+                        debug!("client already awaiting challenge");
 
-                    socket
-                        .send(
-                            source_addr,
-                            &ServerMessage::Sync {
-                                grid: Cow::Borrowed(&grid),
-                            },
-                        )
-                        .unwrap();
+                        if client.challenge_confirmed {
+                            found_client = true;
+                        } else {
+                            socket
+                                .send(source_addr, &ServerMessage::Challenge { salt: client.salt })
+                                .unwrap();
+                            found_client = true;
+                        }
+                    }
+                }
 
-                    player = Some((source_addr, grid));
-                } else {
-                    debug!(
-                        "rejecting client {} since a game is already in progress",
-                        source_addr
-                    );
+                if !found_client {
+                    let client = Client::new(source_addr);
+                    let salt = client.salt.clone();
+                    connections.push(client);
                     socket
-                        .send(source_addr, &ServerMessage::ConnectionRejected)
+                        .send(source_addr, &ServerMessage::Challenge { salt })
                         .unwrap();
+                }
+            }
+            Ok(Some((source_addr, ClientMessage::ChallengeResponse { salt }))) => {
+                debug!("received challenge response {}", salt);
+
+                for client in connections.iter_mut() {
+                    if client.address == source_addr && client.salt == salt {
+                        client.challenge_confirmed = true;
+                        socket
+                            .send(source_addr, &ServerMessage::ConnectionAccepted)
+                            .unwrap();
+
+                        if player.is_none() {
+                            debug!("client at {:?} connected", source_addr);
+                            let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
+
+                            socket
+                                .send(
+                                    source_addr,
+                                    &ServerMessage::Sync {
+                                        grid: Cow::Borrowed(&grid),
+                                    },
+                                )
+                                .unwrap();
+
+                            player = Some((source_addr, grid));
+                        } else {
+                            debug!(
+                                "rejecting client {} since a game is already in progress",
+                                source_addr
+                            );
+                            socket
+                                .send(source_addr, &ServerMessage::ConnectionRejected)
+                                .unwrap();
+                        }
+                    }
                 }
             }
             Ok(Some((_source_addr, ClientMessage::Command(command)))) => {
                 trace!("server received command {:?}", command);
+                // TODO: check coming from a confirmed client
 
                 if let Some((_, ref mut grid)) = player {
                     match command {

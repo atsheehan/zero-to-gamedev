@@ -14,8 +14,9 @@ enum ConnectionState {
     // We're currently trying to connect to he server
     SendingConnectionRequest,
     // We've reached the server but need to finish the secret handshake
-    SendingChallengeResponse,
-
+    SendingChallengeResponse { salt: u64 },
+    // Challenge was successful, time to play game
+    Connected,
     // Disconnected,
     // We've been rejected because a game is already going
     Rejected,
@@ -99,19 +100,28 @@ impl Scene for ConnectScene {
 
         match self.state {
             ConnectionState::SendingConnectionRequest => {
+                debug!("sending connection request");
                 self.socket
                     .send(self.server_addr, &ClientMessage::Connect)
                     .unwrap();
                 self.connection_attempt_counter += 1;
             }
+            ConnectionState::SendingChallengeResponse { salt } => {
+                debug!("sending challenge response");
+                self.socket
+                    .send(self.server_addr, &ClientMessage::ChallengeResponse { salt })
+                    .unwrap();
+            }
             _ => {
-                debug!("other");
+                // debug!("other");
             }
         }
 
         match self.socket.receive::<ServerMessage>() {
             Ok(Some((source_addr, ServerMessage::Sync { grid }))) => {
                 debug!("connected to server at {:?}", source_addr);
+                self.state = ConnectionState::Connected;
+
                 Box::new(GameScene::new(
                     grid.into_owned(),
                     self.socket,
@@ -125,6 +135,11 @@ impl Scene for ConnectScene {
             Ok(Some((source_addr, ServerMessage::ConnectionRejected))) => {
                 error!("client {} was rejected!", source_addr);
                 self.state = ConnectionState::Rejected;
+                self
+            }
+            Ok(Some((_source_addr, ServerMessage::Challenge { salt }))) => {
+                debug!("received challenge from server: {}", salt);
+                self.state = ConnectionState::SendingChallengeResponse { salt };
                 self
             }
             Ok(None) => self,
