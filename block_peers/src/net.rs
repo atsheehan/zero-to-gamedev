@@ -32,7 +32,10 @@ const PROTOCOL_VERSION: u32 = 1;
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     Connect,
-    Command { player_id: u32, event: GridInputEvent },
+    Command {
+        player_id: u32,
+        event: GridInputEvent,
+    },
     Disconnect,
 }
 
@@ -42,7 +45,10 @@ pub enum ServerMessage<'a> {
     // borrow the grid from server when it is writing the message, but
     // own the grid when the client receives and deserializes the
     // message. Cow lets us treat borrowed and owned data similarly
-    Sync { player_id: u32, grids: Cow<'a, Vec<Grid>> },
+    Sync {
+        player_id: u32,
+        grids: Cow<'a, Vec<Grid>>,
+    },
     // Server already has a game going and therefore can't take anymore new connections
     Reject,
     Connected,

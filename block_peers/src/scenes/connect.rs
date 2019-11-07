@@ -41,10 +41,15 @@ impl Scene for ConnectScene {
         match self.state {
             ConnectionState::Rejected => {
                 renderer.render_text(Text::new("REJECTED").center_xy(400, 300).height(40).build());
-            },
+            }
             ConnectionState::Connected => {
-                renderer.render_text(Text::new("Connected, waiting for game to start...").center_xy(400, 300).height(40).build());
-            },
+                renderer.render_text(
+                    Text::new("Connected, waiting for game to start...")
+                        .center_xy(400, 300)
+                        .height(40)
+                        .build(),
+                );
+            }
             _ => {
                 renderer.render_text(
                     Text::new("Connecting to server...")
@@ -76,7 +81,7 @@ impl Scene for ConnectScene {
                         error!("client {} was rejected!", source_addr);
                         self.state = ConnectionState::Rejected;
                     }
-                    Ok(None) => {},
+                    Ok(None) => {}
                     Ok(Some((_source_addr, message))) => {
                         debug!("received unexpected message: {:?}", message);
                     }
@@ -90,7 +95,10 @@ impl Scene for ConnectScene {
                 // wait for sync message, transition to new game state
                 match self.socket.receive::<ServerMessage>() {
                     Ok(Some((source_addr, ServerMessage::Sync { player_id, grids }))) => {
-                        debug!("connected as player {} to server {:?}", player_id, source_addr);
+                        debug!(
+                            "connected as player {} to server {:?}",
+                            player_id, source_addr
+                        );
                         return Box::new(GameScene::new(
                             player_id,
                             grids.into_owned(),
@@ -102,7 +110,7 @@ impl Scene for ConnectScene {
                         error!("client {} was rejected!", source_addr);
                         self.state = ConnectionState::Rejected;
                     }
-                    Ok(None) => {},
+                    Ok(None) => {}
                     Ok(Some((_source_addr, message))) => {
                         debug!("received unexpected message: {:?}", message);
                     }

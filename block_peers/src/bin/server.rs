@@ -44,8 +44,7 @@ fn main() {
     let mut game: Option<(Vec<SocketAddr>, Vec<Grid>)> = None;
 
     'running: loop {
-        if game.is_none() && connections.len() >= 2 {
-        }
+        if game.is_none() && connections.len() >= 2 {}
 
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
@@ -57,7 +56,10 @@ fn main() {
 
                     for (player_id, addr) in client_addrs.iter().enumerate() {
                         let player_id = player_id as u32;
-                        let message = ServerMessage::Sync { player_id, grids: Cow::Borrowed(&grids) };
+                        let message = ServerMessage::Sync {
+                            player_id,
+                            grids: Cow::Borrowed(&grids),
+                        };
                         socket.send(addr, &message).unwrap();
                     }
                 }
@@ -78,22 +80,15 @@ fn main() {
         }
 
         match socket.receive::<ClientMessage>() {
-            Ok(Some((source_addr, ClientMessage::Connect))) => {
-                match game {
-                    Some(_) => {
-                        socket.send(source_addr, &ServerMessage::Reject).unwrap();
-                    }
-                    None => {
-                        connections.insert(source_addr);
-                        socket
-                            .send(
-                                source_addr,
-                                ServerMessage::Connected,
-                            )
-                            .unwrap();
-                    }
+            Ok(Some((source_addr, ClientMessage::Connect))) => match game {
+                Some(_) => {
+                    socket.send(source_addr, &ServerMessage::Reject).unwrap();
                 }
-            }
+                None => {
+                    connections.insert(source_addr);
+                    socket.send(source_addr, ServerMessage::Connected).unwrap();
+                }
+            },
             Ok(Some((source_addr, ClientMessage::Command { player_id, event }))) => {
                 trace!("server received command {:?}", event);
 

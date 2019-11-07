@@ -269,7 +269,13 @@ impl Grid {
         }
     }
 
-    fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, x_offset: i32, opacity: Opacity) {
+    fn render_piece(
+        &self,
+        renderer: &mut Renderer,
+        piece: &Piece,
+        x_offset: i32,
+        opacity: Opacity,
+    ) {
         for GridCell { col, row } in piece.global_iter() {
             let x = col * CELL_SIZE as i32;
             let y = row * CELL_SIZE as i32;
