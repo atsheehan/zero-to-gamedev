@@ -13,6 +13,14 @@ use std::path::Path;
 use crate::brick::BrickType;
 use crate::text::Text;
 
+// These constants define the logical size of the screen: whenever
+// trying to position something on the screen we should use these
+// coordinates rather than the actual window coordinates. SDL will
+// translate the logical coordinates to window coordinates if the
+// window changes size/shape.
+pub const VIEWPORT_WIDTH: u32 = 800;
+pub const VIEWPORT_HEIGHT: u32 = 600;
+
 /// Which image to render when calling `render_image`. This module
 /// maps the image to the appropriate location in the larger texture.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
@@ -109,14 +117,10 @@ pub struct Renderer<'ttf> {
     font: Font<'ttf, 'static>,
 }
 
-#[derive(Debug)]
-pub struct WindowSize {
-    pub width: u32,
-    pub height: u32,
-}
-
 impl<'ttf> Renderer<'ttf> {
-    pub fn new(canvas: WindowCanvas, ttf_context: &'ttf Sdl2TtfContext) -> Self {
+    pub fn new(mut canvas: WindowCanvas, ttf_context: &'ttf Sdl2TtfContext) -> Self {
+        canvas.set_logical_size(VIEWPORT_WIDTH, VIEWPORT_HEIGHT).unwrap();
+
         let texture_creator = canvas.texture_creator();
         let pieces = texture_creator
             .load_texture(Path::new("assets/tiles.png"))
@@ -133,18 +137,6 @@ impl<'ttf> Renderer<'ttf> {
             pieces,
             string_textures,
             font,
-        }
-    }
-
-    pub fn size(&self) -> WindowSize {
-        let result = self
-            .canvas
-            .output_size()
-            .expect("unable to determine window size of canvas");
-
-        WindowSize {
-            width: result.0,
-            height: result.1,
         }
     }
 
