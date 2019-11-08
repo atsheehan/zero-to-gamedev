@@ -8,9 +8,9 @@ use std::slice::Iter;
 use std::sync::atomic::Ordering;
 
 use crate::ai::DumbAI;
-use crate::grid::Grid;
+use crate::grid::{Grid, CELL_SIZE};
 use crate::piece::Piece;
-use crate::render::{Image, Opacity, Renderer, WindowSize};
+use crate::render::{Image, Opacity, Renderer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT};
 use crate::scene::Scene;
 use crate::scenes::ConnectScene;
 use crate::sound::SOUND_IS_ENABLED;
@@ -23,9 +23,9 @@ pub struct TitleScene {
 }
 
 impl TitleScene {
-    pub fn new(server_addr: SocketAddr, size: WindowSize) -> Self {
-        let width = size.width / 20;
-        let height = size.height / 20;
+    pub fn new(server_addr: SocketAddr) -> Self {
+        let width = VIEWPORT_WIDTH / CELL_SIZE;
+        let height = VIEWPORT_HEIGHT / CELL_SIZE;
         let mut background_grid = Grid::new(height, width);
 
         // Set some pieces on the board

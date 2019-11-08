@@ -7,7 +7,7 @@ use crate::brick::{Brick, BrickIterator, BrickType, GridCell, LineIterator, Matc
 use crate::piece::{random_next_piece, Piece};
 use crate::render::{Image, Opacity, Renderer};
 
-const CELL_SIZE: u32 = 20;
+pub const CELL_SIZE: u32 = 20;
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum GridInputEvent {
