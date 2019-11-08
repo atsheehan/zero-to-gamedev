@@ -21,11 +21,11 @@ $ cargo run --bin server
 $ cargo run --bin client
 ```
 
-Additionally, you may need to install the `sdl` libraries to compile the binaries.
+Additionally, you may need to install the `sdl2` libraries to compile the binaries.
 For macOS, the libraries are available via homebrew:
 
 ```sh
-$ brew install sdl sdl_ttf sdl_image
+$ brew install sdl2 sdl2_ttf sdl2_image
 ```
 
 ## Iteration 1 - Basic Mechanics
