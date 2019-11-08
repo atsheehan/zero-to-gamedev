@@ -153,7 +153,7 @@ impl Grid {
         self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
 
         // Render ghost piece
-        let mut ghost_piece = self.current_piece.move_down();
+        let mut ghost_piece = self.current_piece;
         let mut next_ghost_piece = ghost_piece.move_down();
 
         while self.does_piece_fit(&next_ghost_piece) {
