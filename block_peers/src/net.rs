@@ -32,9 +32,14 @@ const PROTOCOL_VERSION: u32 = 1;
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum ClientMessage {
     Connect,
-    Command(GridInputEvent),
+    Command {
+        player_id: u32,
+        event: GridInputEvent,
+    },
     Disconnect,
-    ChallengeResponse { salt: u64 }
+    ChallengeResponse {
+        salt: u64,
+    },
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -43,7 +48,10 @@ pub enum ServerMessage<'a> {
     // borrow the grid from server when it is writing the message, but
     // own the grid when the client receives and deserializes the
     // message. Cow lets us treat borrowed and owned data similarly
-    Sync { grid: Cow<'a, Grid> },
+    Sync {
+        player_id: u32,
+        grids: Cow<'a, Vec<Grid>>,
+    },
     // Server can't accept anymore incoming connections
     ConnectionRejected,
     // Client challenge was successful and connection has been accepted
@@ -51,7 +59,9 @@ pub enum ServerMessage<'a> {
     // Server needs to confirm that the client is who they say they are
     // by sending a unique salt and waiting for the client to respond
     // with the salt.
-    Challenge { salt: u64 },
+    Challenge {
+        salt: u64,
+    },
 }
 
 // -------
