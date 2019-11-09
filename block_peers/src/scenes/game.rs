@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 
 use crate::grid::{Grid, GridInputEvent};
 use crate::net::{ClientMessage, ServerMessage, Socket};
-use crate::render::Renderer;
+use crate::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::{AppLifecycleEvent, Scene};
 
 pub struct GameScene {
@@ -98,7 +98,11 @@ impl Scene for GameScene {
     }
 
     fn render(&self, renderer: &mut Renderer) {
+        let (x_offset, y_offset) = grid_offset(self.grid.size());
+
+        renderer.set_offset(x_offset, y_offset);
         self.grid.render(renderer);
+        renderer.set_offset(0, 0);
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
@@ -128,4 +132,13 @@ impl Scene for GameScene {
             }
         }
     }
+}
+
+fn grid_offset(grid_size: (u32, u32)) -> (i32, i32) {
+    let (grid_width, grid_height) = grid_size;
+
+    (
+        (VIEWPORT_WIDTH - grid_width) as i32 / 2,
+        (VIEWPORT_HEIGHT - grid_height) as i32 / 2,
+    )
 }

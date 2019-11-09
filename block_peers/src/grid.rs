@@ -47,6 +47,10 @@ impl Grid {
         }
     }
 
+    pub fn size(&self) -> (u32, u32) {
+        (self.width * CELL_SIZE, self.height * CELL_SIZE)
+    }
+
     pub fn move_piece_left(&mut self) {
         let next = self.current_piece.move_left();
         if self.does_piece_fit(&next) {

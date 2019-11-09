@@ -115,11 +115,15 @@ pub struct Renderer<'ttf> {
     pieces: Texture,
     string_textures: HashMap<u64, Texture>,
     font: Font<'ttf, 'static>,
+    x_offset: i32,
+    y_offset: i32,
 }
 
 impl<'ttf> Renderer<'ttf> {
     pub fn new(mut canvas: WindowCanvas, ttf_context: &'ttf Sdl2TtfContext) -> Self {
-        canvas.set_logical_size(VIEWPORT_WIDTH, VIEWPORT_HEIGHT).unwrap();
+        canvas
+            .set_logical_size(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
+            .unwrap();
 
         let texture_creator = canvas.texture_creator();
         let pieces = texture_creator
@@ -137,7 +141,14 @@ impl<'ttf> Renderer<'ttf> {
             pieces,
             string_textures,
             font,
+            x_offset: 0,
+            y_offset: 0,
         }
+    }
+
+    pub fn set_offset(&mut self, x_offset: i32, y_offset: i32) {
+        self.x_offset = x_offset;
+        self.y_offset = y_offset;
     }
 
     pub fn clear(&mut self) {
@@ -150,12 +161,16 @@ impl<'ttf> Renderer<'ttf> {
     }
 
     pub fn fill_rect(&mut self, rect: Rect, color: Color) {
+        let rect = translate(rect, self.x_offset, self.y_offset);
+
         self.canvas.set_draw_color(color);
         self.canvas.fill_rect(rect).expect("failed to fill rect");
     }
 
     // TODO: update function to use Position / Dimensions similar to render_text
     pub fn render_image(&mut self, image: Image, dest_rect: Rect, opacity: Opacity) {
+        let dest_rect = translate(dest_rect, self.x_offset, self.y_offset);
+
         self.pieces.set_alpha_mod(opacity.alpha());
         self.canvas
             .copy(&self.pieces, image.source_rect(), dest_rect)
@@ -192,13 +207,13 @@ impl<'ttf> Renderer<'ttf> {
 
         texture.set_color_mod(text.color.r, text.color.g, text.color.b);
 
-        self.canvas
-            .copy(
-                &texture,
-                None,
-                compute_dest_rect(&texture, text.position, text.dimensions),
-            )
-            .unwrap();
+        let dest_rect = translate(
+            compute_dest_rect(&texture, text.position, text.dimensions),
+            self.x_offset,
+            self.y_offset,
+        );
+
+        self.canvas.copy(&texture, None, dest_rect).unwrap();
     }
 }
 
@@ -221,6 +236,15 @@ fn compute_dest_rect(texture: &Texture, position: Position, dimensions: Dimensio
     };
 
     Rect::new(left, top, width, height)
+}
+
+fn translate(rect: Rect, x_offset: i32, y_offset: i32) -> Rect {
+    Rect::new(
+        rect.x() + x_offset,
+        rect.y() + y_offset,
+        rect.width(),
+        rect.height(),
+    )
 }
 
 // --------
