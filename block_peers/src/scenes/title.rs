@@ -8,7 +8,8 @@ use std::slice::Iter;
 use std::sync::atomic::Ordering;
 
 use crate::ai::DumbAI;
-use crate::grid::{Grid, CELL_SIZE};
+use crate::brick::CELL_SIZE;
+use crate::grid::Grid;
 use crate::piece::Piece;
 use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::Scene;

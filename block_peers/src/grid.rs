@@ -9,8 +9,6 @@ use crate::brick::{
 use crate::piece::{random_next_piece, Piece};
 use crate::render::{Image, Opacity, Renderer};
 
-pub const CELL_SIZE: u32 = 20;
-
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum GridInputEvent {
     MoveLeft,
