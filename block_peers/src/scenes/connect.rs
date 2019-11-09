@@ -17,7 +17,6 @@ enum ConnectionState {
     SendingChallengeResponse { salt: u64 },
     // Challenge was successful, time to play game
     Connected,
-    // Disconnected,
     // We've been rejected because a game is already going
     Rejected,
     // We've tried connecting to the server for X seconds but have been unable to reach.
@@ -69,7 +68,8 @@ impl Scene for ConnectScene {
         let message: &'static str;
 
         match self.state {
-            ConnectionState::SendingConnectionRequest => {
+            ConnectionState::SendingConnectionRequest
+            | ConnectionState::SendingChallengeResponse { .. } => {
                 message = "Connecting to server";
                 renderer.render_text(
                     Text::from(self.dots())
@@ -78,14 +78,14 @@ impl Scene for ConnectScene {
                         .build(),
                 );
             }
+            ConnectionState::Connected => {
+                message = "Waiting to start game...";
+            }
             ConnectionState::TimedOut => {
                 message = "Timed Out";
             }
             ConnectionState::Rejected => {
                 message = "REJECTED";
-            }
-            _ => {
-                message = "Unhandled State";
             }
         }
 
@@ -112,24 +112,25 @@ impl Scene for ConnectScene {
                     .send(self.server_addr, &ClientMessage::ChallengeResponse { salt })
                     .unwrap();
             }
-            _ => {
-                // debug!("other");
-            }
+            _ => {}
         }
 
         match self.socket.receive::<ServerMessage>() {
             Ok(Some((source_addr, ServerMessage::Sync { grid }))) => {
                 debug!("connected to server at {:?}", source_addr);
-                self.state = ConnectionState::Connected;
 
-                Box::new(GameScene::new(
-                    grid.into_owned(),
-                    self.socket,
-                    self.server_addr,
-                ))
+                match self.state {
+                    ConnectionState::Connected => Box::new(GameScene::new(
+                        grid.into_owned(),
+                        self.socket,
+                        self.server_addr,
+                    )),
+                    _ => self,
+                }
             }
             Ok(Some((source_addr, ServerMessage::ConnectionAccepted))) => {
                 debug!("connection accepted for client {}", source_addr);
+                self.state = ConnectionState::Connected;
                 self
             }
             Ok(Some((source_addr, ServerMessage::ConnectionRejected))) => {

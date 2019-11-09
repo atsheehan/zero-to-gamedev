@@ -10,6 +10,8 @@ use block_peers::net::{ClientMessage, ServerMessage, Socket};
 use getopts::Options;
 use rand::Rng;
 use std::borrow::Cow;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
+use std::collections::HashMap;
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
@@ -23,27 +25,20 @@ const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
 
-const MAX_CLIENTS: usize = 1;
-
-struct Client {
-    address: SocketAddr,
+struct Connection {
+    // TODO: reassess whether we need when introducing multiplayer
+    _address: SocketAddr,
     challenge_confirmed: bool,
     salt: u64,
-    // port?
-    // state?
-    // grid: Grid,
 }
 
-impl Client {
+impl Connection {
     pub fn new(address: SocketAddr) -> Self {
         let mut rng = rand::thread_rng();
         let salt = rng.gen_range(0, std::u64::MAX);
 
-        // generate salt
-        // create new grid
-        // challenge confirmed no
         Self {
-            address,
+            _address: address,
             salt,
             challenge_confirmed: false,
         }
@@ -61,7 +56,7 @@ fn main() {
     let mut previous_instant = Instant::now();
 
     let mut player: Option<(SocketAddr, Grid)> = None;
-    let mut connections: Vec<Client> = Vec::new();
+    let mut connections: HashMap<SocketAddr, Connection> = HashMap::new();
 
     'running: loop {
         let current_instant = Instant::now();
@@ -78,69 +73,46 @@ fn main() {
                     .unwrap();
             }
 
-            // TODO: for each confirmed client, update the grid and send sync message
-
             previous_instant += tick_duration;
         }
 
         match socket.receive::<ClientMessage>() {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
-                let mut found_client = false;
-                for client in connections.iter() {
-                    if client.address == source_addr {
-                        debug!("client already awaiting challenge");
-
-                        if client.challenge_confirmed {
-                            found_client = true;
-                        } else {
-                            socket
-                                .send(source_addr, &ServerMessage::Challenge { salt: client.salt })
-                                .unwrap();
-                            found_client = true;
-                        }
+                match connections.entry(source_addr) {
+                    Vacant(entry) => {
+                        let client = Connection::new(source_addr);
+                        let salt = client.salt.clone();
+                        entry.insert(client);
+                        socket
+                            .send(source_addr, &ServerMessage::Challenge { salt })
+                            .unwrap();
                     }
-                }
-
-                if !found_client {
-                    let client = Client::new(source_addr);
-                    let salt = client.salt.clone();
-                    connections.push(client);
-                    socket
-                        .send(source_addr, &ServerMessage::Challenge { salt })
-                        .unwrap();
+                    Occupied(entry) => {
+                        socket
+                            .send(
+                                source_addr,
+                                &ServerMessage::Challenge {
+                                    salt: entry.get().salt,
+                                },
+                            )
+                            .unwrap();
+                    }
                 }
             }
             Ok(Some((source_addr, ClientMessage::ChallengeResponse { salt }))) => {
                 debug!("received challenge response {}", salt);
-
-                for client in connections.iter_mut() {
-                    if client.address == source_addr && client.salt == salt {
-                        client.challenge_confirmed = true;
-                        socket
-                            .send(source_addr, &ServerMessage::ConnectionAccepted)
-                            .unwrap();
-
-                        if player.is_none() {
-                            debug!("client at {:?} connected", source_addr);
-                            let grid = Grid::new(GRID_HEIGHT, GRID_WIDTH);
-
+                match connections.entry(source_addr) {
+                    Vacant(_) => {
+                        trace!(
+                            "received incorrect challenge response, no client {} awaiting confirmation",
+                            source_addr
+                        );
+                    }
+                    Occupied(mut entry) => {
+                        if entry.get().salt == salt {
+                            entry.get_mut().challenge_confirmed = true;
                             socket
-                                .send(
-                                    source_addr,
-                                    &ServerMessage::Sync {
-                                        grid: Cow::Borrowed(&grid),
-                                    },
-                                )
-                                .unwrap();
-
-                            player = Some((source_addr, grid));
-                        } else {
-                            debug!(
-                                "rejecting client {} since a game is already in progress",
-                                source_addr
-                            );
-                            socket
-                                .send(source_addr, &ServerMessage::ConnectionRejected)
+                                .send(source_addr, &ServerMessage::ConnectionAccepted)
                                 .unwrap();
                         }
                     }
