@@ -97,6 +97,10 @@ pub fn main() {
             ups += 1;
         }
 
+        if scene.should_quit() {
+            break 'running;
+        }
+
         // Render
         renderer.clear();
         scene.render(&mut renderer);

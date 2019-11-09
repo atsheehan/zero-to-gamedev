@@ -21,6 +21,7 @@ pub struct TitleScene {
     server_addr: SocketAddr,
     ai: DumbAI,
     state: MenuState,
+    should_quit: bool,
 }
 
 impl TitleScene {
@@ -41,6 +42,7 @@ impl TitleScene {
             server_addr,
             ai: DumbAI::new(background_grid),
             state: MenuState::StartGame,
+            should_quit: false,
         }
     }
 }
@@ -63,7 +65,7 @@ impl Scene for TitleScene {
                     self
                 }
                 MenuState::Quit => {
-                    error!("unable to quit due to Scene API right now. Hit 'q' or 'escape'");
+                    self.should_quit = true;
                     self
                 }
             },
@@ -139,6 +141,10 @@ impl Scene for TitleScene {
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
         self.ai.update();
         self
+    }
+
+    fn should_quit(&self) -> bool {
+        self.should_quit
     }
 }
 
