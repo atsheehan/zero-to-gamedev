@@ -1,3 +1,4 @@
+use sdl2::rect::Rect;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::ops::Add;
@@ -8,10 +9,23 @@ use crate::render::Image;
 // GridCell
 // --------
 
+pub const CELL_SIZE: u32 = 20;
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub struct GridCell {
     pub col: i32,
     pub row: i32,
+}
+
+impl GridCell {
+    pub fn rect(&self) -> Rect {
+        Rect::new(
+            self.col * CELL_SIZE as i32,
+            self.row * CELL_SIZE as i32,
+            CELL_SIZE,
+            CELL_SIZE,
+        )
+    }
 }
 
 impl Default for GridCell {

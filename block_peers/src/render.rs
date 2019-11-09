@@ -121,7 +121,9 @@ pub struct Renderer<'ttf> {
 
 impl<'ttf> Renderer<'ttf> {
     pub fn new(mut canvas: WindowCanvas, ttf_context: &'ttf Sdl2TtfContext) -> Self {
-        canvas.set_logical_size(VIEWPORT_WIDTH, VIEWPORT_HEIGHT).unwrap();
+        canvas
+            .set_logical_size(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
+            .unwrap();
 
         let texture_creator = canvas.texture_creator();
         let pieces = texture_creator

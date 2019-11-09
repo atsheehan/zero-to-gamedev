@@ -10,7 +10,7 @@ use std::sync::atomic::Ordering;
 use crate::ai::DumbAI;
 use crate::grid::{Grid, CELL_SIZE};
 use crate::piece::Piece;
-use crate::render::{Image, Opacity, Renderer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT};
+use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::Scene;
 use crate::scenes::ConnectScene;
 use crate::sound::SOUND_IS_ENABLED;
