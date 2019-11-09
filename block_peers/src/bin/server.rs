@@ -94,7 +94,7 @@ fn main() {
                 // the clients.
                 None => {
                     if connections.len() >= 2 {
-                        let clients = connections.iter().cloned().take(2).collect();
+                        let clients = connections.keys().cloned().take(2).collect();
                         let grids = vec![
                             Grid::new(GRID_HEIGHT, GRID_WIDTH),
                             Grid::new(GRID_HEIGHT, GRID_WIDTH),

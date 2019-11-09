@@ -128,7 +128,7 @@ impl Scene for GameScene {
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
-        if self.grid.gameover {
+        if self.grids.iter().any(|grid| grid.gameover) {
             return Box::new(GameOverScene::new(self.socket, self.address));
         }
 
@@ -143,7 +143,7 @@ impl Scene for GameScene {
                 self.grids = grids.into_owned();
                 self
             }
-            Ok(Some((_source_addr, ServerMessage::Reject))) => {
+            Ok(Some((_source_addr, ServerMessage::ConnectionRejected))) => {
                 error!("received reject message when not appropriate");
                 self
             }

@@ -26,6 +26,7 @@ enum ConnectionState {
 pub struct ConnectScene {
     server_addr: SocketAddr,
     socket: Socket,
+
     state: ConnectionState,
     connection_attempt_counter: u64,
 }
@@ -115,12 +116,13 @@ impl Scene for ConnectScene {
         }
 
         match self.socket.receive::<ServerMessage>() {
-            Ok(Some((source_addr, ServerMessage::Sync { grid }))) => {
+            Ok(Some((source_addr, ServerMessage::Sync { player_id, grids }))) => {
                 debug!("connected to server at {:?}", source_addr);
 
                 match self.state {
                     ConnectionState::Connected => Box::new(GameScene::new(
-                        grid.into_owned(),
+                        player_id,
+                        grids.into_owned(),
                         self.socket,
                         self.server_addr,
                     )),
@@ -142,12 +144,12 @@ impl Scene for ConnectScene {
                 self.state = ConnectionState::SendingChallengeResponse { salt };
                 self
             }
-            ConnectionState::Rejected => {
-                // exit early, maybe retry after some time
+            Ok(None) => self,
+            Err(_) => {
+                error!("received unknown message");
+                panic!("expected game state to be given from server on init")
             }
         }
-
-        self
     }
 }
 

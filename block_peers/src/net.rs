@@ -37,7 +37,9 @@ pub enum ClientMessage {
         event: GridInputEvent,
     },
     Disconnect,
-    ChallengeResponse { salt: u64 }
+    ChallengeResponse {
+        salt: u64,
+    },
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -57,7 +59,9 @@ pub enum ServerMessage<'a> {
     // Server needs to confirm that the client is who they say they are
     // by sending a unique salt and waiting for the client to respond
     // with the salt.
-    Challenge { salt: u64 },
+    Challenge {
+        salt: u64,
+    },
 }
 
 // -------
