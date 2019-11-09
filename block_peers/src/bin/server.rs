@@ -114,6 +114,10 @@ fn main() {
                             socket
                                 .send(source_addr, &ServerMessage::ConnectionAccepted)
                                 .unwrap();
+
+                            // TODO: Temporary just to get the game going but should be removed
+                            // once multiplayer is in.
+                            player = Some((source_addr, Grid::new(20, 10)));
                         }
                     }
                 }

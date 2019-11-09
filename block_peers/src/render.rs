@@ -151,6 +151,10 @@ impl<'ttf> Renderer<'ttf> {
         self.y_offset = y_offset;
     }
 
+    pub fn get_offset(&self) -> (i32, i32) {
+        (self.x_offset, self.y_offset)
+    }
+
     pub fn clear(&mut self) {
         self.canvas.set_draw_color(Color::RGB(75, 75, 75));
         self.canvas.clear();

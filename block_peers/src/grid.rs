@@ -8,6 +8,7 @@ use crate::brick::{
 };
 use crate::piece::{random_next_piece, Piece};
 use crate::render::{Image, Opacity, Renderer};
+use crate::text::Text;
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum GridInputEvent {
@@ -23,6 +24,7 @@ pub struct Grid {
     height: u32,
     width: u32,
     cells: Vec<Brick>,
+    staged_piece: Piece,
     current_piece: Piece,
     drop_counter: u32,
     pub gameover: bool,
@@ -36,12 +38,14 @@ impl Grid {
         let cell_count = height * width;
         let cells = vec![Brick::Empty; cell_count as usize];
         let current_piece = random_next_piece().center(width);
+        let staged_piece = random_next_piece().center(width);
 
         Self {
             height,
             width,
             cells,
             current_piece,
+            staged_piece,
             drop_counter: 0,
             gameover: false,
         }
@@ -130,6 +134,7 @@ impl Grid {
             }
         }
 
+        self.render_staged_piece(renderer);
         self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
         self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
     }
@@ -163,9 +168,9 @@ impl Grid {
 // ------------
 impl Grid {
     fn spawn_next_piece(&mut self) {
-        let next_piece = random_next_piece().center(self.width);
-        if self.does_piece_fit(&next_piece) {
-            self.current_piece = random_next_piece().center(self.width);
+        if self.does_piece_fit(&self.staged_piece) {
+            self.current_piece = self.staged_piece;
+            self.staged_piece = random_next_piece().center(self.width);
         } else {
             self.gameover = true;
         }
@@ -255,6 +260,27 @@ impl Grid {
         for cell in piece.global_iter() {
             renderer.render_image(piece.image(), cell.rect(), opacity);
         }
+    }
+
+    fn render_staged_piece(&self, renderer: &mut Renderer) {
+        let bg_color = Color::RGB(44, 44, 44);
+        let (x, y) = renderer.get_offset();
+
+        let (new_x, new_y) = (x, y - (CELL_SIZE * 5) as i32);
+        renderer.set_offset(new_x, new_y);
+
+        let bg_width = self.width * CELL_SIZE;
+        renderer.fill_rect(Rect::new(0, 0, bg_width, 5 * CELL_SIZE), bg_color);
+
+        renderer.render_text(
+            Text::new("Next Block")
+                .height(20)
+                .center_xy((bg_width / 2) as i32, 10)
+                .build(),
+        );
+
+        self.render_piece(renderer, &self.staged_piece.move_down(), Opacity::Opaque);
+        renderer.set_offset(x, y);
     }
 
     fn render_outline(&self, renderer: &mut Renderer) {
