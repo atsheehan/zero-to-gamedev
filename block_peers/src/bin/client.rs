@@ -15,13 +15,13 @@ use std::time::{Duration, Instant};
 
 // Internal
 use block_peers::logging;
-use block_peers::render::Renderer;
+use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use block_peers::scene::{AppLifecycleEvent, Scene};
 use block_peers::scenes::TitleScene;
 
 // Constants
-const WINDOW_WIDTH: u32 = 800;
-const WINDOW_HEIGHT: u32 = 600;
+const WINDOW_WIDTH: u32 = VIEWPORT_WIDTH;
+const WINDOW_HEIGHT: u32 = VIEWPORT_HEIGHT;
 const TICKS_PER_SECOND: u64 = 60;
 const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
 const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
@@ -63,7 +63,7 @@ pub fn main() {
     let mut fps_timer = Instant::now();
 
     // Scene
-    let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr, renderer.size()));
+    let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr));
 
     'running: loop {
         // Input

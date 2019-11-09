@@ -117,10 +117,8 @@ impl Scene for GameScene {
     }
 
     fn render(&self, renderer: &mut Renderer) {
-        let mut idx = 0;
         for grid in &self.grids {
-            grid.render(renderer, idx * 300);
-            idx += 1;
+            grid.render(renderer);
         }
     }
 

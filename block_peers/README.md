@@ -2,6 +2,32 @@
 
 The goal of this project is to write a networked Tetris-clone in Rust.
 
+## Installation/Development
+
+The game uses Rust version `1.38.0` but doesn't use anything too strange so
+should be compatible with older versions.
+
+To run the game the server and client must be running at the same time. You can
+use the debug script:
+
+```sh
+$ ./run.sh
+```
+
+Or alternatively run the two binaries separately:
+
+```sh
+$ cargo run --bin server
+$ cargo run --bin client
+```
+
+Additionally, you may need to install the `sdl2` libraries to compile the binaries.
+For macOS, the libraries are available via homebrew:
+
+```sh
+$ brew install sdl2 sdl2_ttf sdl2_image
+```
+
 ## Iteration 1 - Basic Mechanics
 
 This deliverable defines the basic mechanics of controlling the active piece and attaching bricks to the grid.

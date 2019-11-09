@@ -3,11 +3,11 @@ use sdl2::rect::Rect;
 use serde::{Deserialize, Serialize};
 
 // Internal
-use crate::brick::{Brick, BrickIterator, BrickType, GridCell, LineIterator, MatchingLine};
+use crate::brick::{
+    Brick, BrickIterator, BrickType, GridCell, LineIterator, MatchingLine, CELL_SIZE,
+};
 use crate::piece::{random_next_piece, Piece};
 use crate::render::{Image, Opacity, Renderer};
-
-const CELL_SIZE: u32 = 20;
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum GridInputEvent {
@@ -107,31 +107,8 @@ impl Grid {
         }
     }
 
-    pub fn render(&self, renderer: &mut Renderer, x_offset: i32) {
-        // Render Background
-        let bg_color = Color::RGB(22, 22, 22);
-        let stripe_color = Color::RGB(36, 36, 36);
-
-        renderer.fill_rect(
-            Rect::new(x_offset, 0, self.width * CELL_SIZE, self.height * CELL_SIZE),
-            bg_color,
-        );
-        for i in 0..self.width {
-            let x = i * CELL_SIZE;
-
-            renderer.fill_rect(
-                Rect::new(x_offset + x as i32, 0, 1, self.height * CELL_SIZE),
-                stripe_color,
-            );
-        }
-        for i in 0..self.height {
-            let y = i * CELL_SIZE;
-
-            renderer.fill_rect(
-                Rect::new(x_offset, y as i32, self.width * CELL_SIZE, 1),
-                stripe_color,
-            );
-        }
+    pub fn render(&self, renderer: &mut Renderer) {
+        self.render_outline(renderer);
 
         // Render occupied cells on the board
         for cell in self.grid_iterator() {
@@ -139,29 +116,18 @@ impl Grid {
             match self.cells[idx] {
                 Brick::Occupied(brick_type) => {
                     let image = Image::from_brick_type(brick_type);
-                    self.render_brick(renderer, cell, image, x_offset, Opacity::Opaque);
+                    renderer.render_image(image, cell.rect(), Opacity::Opaque);
                 }
                 Brick::Breaking(frame) => {
                     let image = Image::from_brick_type(BrickType::Smoke(frame));
-                    self.render_brick(renderer, cell, image, x_offset, Opacity::Opaque);
+                    renderer.render_image(image, cell.rect(), Opacity::Opaque);
                 }
                 _ => {}
             }
         }
 
-        // Render current piece
-        self.render_piece(renderer, &self.current_piece, x_offset, Opacity::Opaque);
-
-        // Render ghost piece
-        let mut ghost_piece = self.current_piece.move_down();
-        let mut next_ghost_piece = ghost_piece.move_down();
-
-        while self.does_piece_fit(&next_ghost_piece) {
-            ghost_piece = next_ghost_piece;
-            next_ghost_piece = ghost_piece.move_down();
-        }
-
-        self.render_piece(renderer, &ghost_piece, x_offset, Opacity::Translucent(128));
+        self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
+        self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
     }
 }
 
@@ -269,39 +235,49 @@ impl Grid {
         }
     }
 
-    fn render_piece(
-        &self,
-        renderer: &mut Renderer,
-        piece: &Piece,
-        x_offset: i32,
-        opacity: Opacity,
-    ) {
-        for GridCell { col, row } in piece.global_iter() {
-            let x = col * CELL_SIZE as i32;
-            let y = row * CELL_SIZE as i32;
-            renderer.render_image(
-                piece.image(),
-                Rect::new(x + x_offset, y, CELL_SIZE, CELL_SIZE),
-                opacity,
-            );
+    fn ghost_piece(&self) -> Piece {
+        let mut ghost_piece = self.current_piece;
+        let mut next_ghost_piece = ghost_piece.move_down();
+
+        while self.does_piece_fit(&next_ghost_piece) {
+            ghost_piece = next_ghost_piece;
+            next_ghost_piece = ghost_piece.move_down();
+        }
+
+        ghost_piece
+    }
+
+    fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, opacity: Opacity) {
+        for cell in piece.global_iter() {
+            renderer.render_image(piece.image(), cell.rect(), opacity);
         }
     }
 
-    fn render_brick(
-        &self,
-        renderer: &mut Renderer,
-        cell: GridCell,
-        image: Image,
-        x_offset: i32,
-        opacity: Opacity,
-    ) {
-        let x = cell.col as u32 * CELL_SIZE;
-        let y = cell.row as u32 * CELL_SIZE;
+    fn render_outline(&self, renderer: &mut Renderer) {
+        let bg_color = Color::RGB(22, 22, 22);
+        let stripe_color = Color::RGB(36, 36, 36);
 
-        renderer.render_image(
-            image,
-            Rect::new(x_offset + x as i32, y as i32, CELL_SIZE, CELL_SIZE),
-            opacity,
+        renderer.fill_rect(
+            Rect::new(0, 0, self.width * CELL_SIZE, self.height * CELL_SIZE),
+            bg_color,
         );
+
+        for i in 0..self.width {
+            let x = i * CELL_SIZE;
+
+            renderer.fill_rect(
+                Rect::new(x as i32, 0, 1, self.height * CELL_SIZE),
+                stripe_color,
+            );
+        }
+
+        for i in 0..self.height {
+            let y = i * CELL_SIZE;
+
+            renderer.fill_rect(
+                Rect::new(0, y as i32, self.width * CELL_SIZE, 1),
+                stripe_color,
+            );
+        }
     }
 }
