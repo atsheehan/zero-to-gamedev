@@ -8,8 +8,10 @@ use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 
 use getopts::Options;
+use rand::Rng;
 use std::borrow::Cow;
-use std::collections::HashSet;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
+use std::collections::HashMap;
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
@@ -23,6 +25,26 @@ const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
 
+struct Connection {
+    // TODO: reassess whether we need when introducing multiplayer
+    _address: SocketAddr,
+    challenge_confirmed: bool,
+    salt: u64,
+}
+
+impl Connection {
+    pub fn new(address: SocketAddr) -> Self {
+        let mut rng = rand::thread_rng();
+        let salt = rng.gen_range(0, std::u64::MAX);
+
+        Self {
+            _address: address,
+            salt,
+            challenge_confirmed: false,
+        }
+    }
+}
+
 fn main() {
     logging::init();
     let options = get_options();
@@ -33,10 +55,6 @@ fn main() {
     let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
     let mut previous_instant = Instant::now();
 
-    // Connections holds a list of clients connected, and when there
-    // are at least 2 clients connected it will start the game.
-    let mut connections = HashSet::<SocketAddr>::new();
-
     // The running game state: a list of player addrs and a list of
     // grids. I tried to combine the addr and grid into a single
     // struct, but I couldn't figure out how to extract just the grids
@@ -45,6 +63,10 @@ fn main() {
     // The player_id is the index into each list (so it should be
     // either 0 or 1 for a 2-player game).
     let mut game: Option<(Vec<SocketAddr>, Vec<Grid>)> = None;
+
+    // Connections holds a list of clients connected, and when there
+    // are at least 2 clients connected it will start the game.
+    let mut connections: HashMap<SocketAddr, Connection> = HashMap::new();
 
     'running: loop {
         let current_instant = Instant::now();
@@ -87,15 +109,47 @@ fn main() {
         }
 
         match socket.receive::<ClientMessage>() {
-            Ok(Some((source_addr, ClientMessage::Connect))) => match game {
-                Some(_) => {
-                    socket.send(source_addr, &ServerMessage::Reject).unwrap();
+            Ok(Some((source_addr, ClientMessage::Connect))) => {
+                match connections.entry(source_addr) {
+                    Vacant(entry) => {
+                        let client = Connection::new(source_addr);
+                        let salt = client.salt.clone();
+                        entry.insert(client);
+                        socket
+                            .send(source_addr, &ServerMessage::Challenge { salt })
+                            .unwrap();
+                    }
+                    Occupied(entry) => {
+                        socket
+                            .send(
+                                source_addr,
+                                &ServerMessage::Challenge {
+                                    salt: entry.get().salt,
+                                },
+                            )
+                            .unwrap();
+                    }
                 }
-                None => {
-                    connections.insert(source_addr);
-                    socket.send(source_addr, ServerMessage::Connected).unwrap();
+            }
+            Ok(Some((source_addr, ClientMessage::ChallengeResponse { salt }))) => {
+                debug!("received challenge response {}", salt);
+                match connections.entry(source_addr) {
+                    Vacant(_) => {
+                        trace!(
+                            "received incorrect challenge response, no client {} awaiting confirmation",
+                            source_addr
+                        );
+                    }
+                    Occupied(mut entry) => {
+                        if entry.get().salt == salt {
+                            entry.get_mut().challenge_confirmed = true;
+                            socket
+                                .send(source_addr, &ServerMessage::ConnectionAccepted)
+                                .unwrap();
+                        }
+                    }
                 }
-            },
+            }
             Ok(Some((source_addr, ClientMessage::Command { player_id, event }))) => {
                 trace!("server received command {:?}", event);
 

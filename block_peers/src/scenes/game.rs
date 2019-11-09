@@ -6,6 +6,7 @@ use crate::grid::{Grid, GridInputEvent};
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::{AppLifecycleEvent, Scene};
+use crate::scenes::GameOverScene;
 
 pub struct GameScene {
     player_id: u32,
@@ -127,6 +128,10 @@ impl Scene for GameScene {
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
+        if self.grid.gameover {
+            return Box::new(GameOverScene::new(self.socket, self.address));
+        }
+
         match self.socket.receive::<ServerMessage>() {
             Ok(Some((
                 _source_addr,
