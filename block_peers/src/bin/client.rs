@@ -15,7 +15,7 @@ use std::time::{Duration, Instant};
 
 // Internal
 use block_peers::logging;
-use block_peers::render::{Renderer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT};
+use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use block_peers::scene::{AppLifecycleEvent, Scene};
 use block_peers::scenes::TitleScene;
 
@@ -95,6 +95,10 @@ pub fn main() {
             scene = scene.update();
             previous_instant += tick_duration;
             ups += 1;
+        }
+
+        if scene.should_quit() {
+            break 'running;
         }
 
         // Render

@@ -14,4 +14,7 @@ pub trait Scene {
     fn render(&self, renderer: &mut Renderer);
     fn update(self: Box<Self>) -> Box<dyn Scene>;
     // fn network() Do we want something like this?
+    fn should_quit(&self) -> bool {
+        false
+    }
 }
