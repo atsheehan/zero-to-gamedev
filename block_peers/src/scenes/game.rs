@@ -6,6 +6,7 @@ use crate::grid::{Grid, GridInputEvent};
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::{AppLifecycleEvent, Scene};
+use crate::scenes::GameOverScene;
 
 pub struct GameScene {
     grid: Grid,
@@ -106,26 +107,16 @@ impl Scene for GameScene {
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
-        /*
-        self.grid.update();
-
         if self.grid.gameover {
-            return Box::new(GameOverScene::new());
+            return Box::new(GameOverScene::new(self.socket, self.address));
         }
-
-        self
-        */
 
         match self.socket.receive::<ServerMessage>() {
             Ok(Some((_source_addr, ServerMessage::Sync { grid }))) => {
                 self.grid = grid.into_owned();
                 self
             }
-            Ok(Some((_source_addr, ServerMessage::Reject))) => {
-                error!("received reject message when not appropriate");
-                self
-            }
-            Ok(None) => self,
+            Ok(_) => self,
             Err(_) => {
                 error!("received unknown message");
                 panic!("expected game state to be given from server on init")

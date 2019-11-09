@@ -24,6 +24,15 @@ impl Text {
         }
     }
 
+    pub fn from(raw: String) -> Self {
+        Self {
+            raw,
+            position: Position::LeftTop(0, 0),
+            dimensions: Dimensions::Height(40),
+            color: Color::RGB(255, 255, 255),
+        }
+    }
+
     // ------------
     // Raw Accessors
     // ------------
