@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use std::io::{Error, ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
+use crate::codec::{gzip_decode, gzip_encode};
 use crate::grid::{Grid, GridInputEvent};
 
 lazy_static! {
@@ -34,7 +35,7 @@ pub enum ClientMessage {
     Connect,
     Command(GridInputEvent),
     Disconnect,
-    ChallengeResponse { salt: u64 }
+    ChallengeResponse { salt: u64 },
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -86,8 +87,9 @@ impl Socket {
         };
 
         let data = &self.buffer[..bytes_received];
+        let decoded = gzip_decode(&data);
 
-        match bincode::deserialize(&data) {
+        match bincode::deserialize(&decoded) {
             Ok(packet) => {
                 let packet: Packet = packet;
 
@@ -104,7 +106,8 @@ impl Socket {
     }
 
     pub fn send<A: ToSocketAddrs, S: Serialize>(&mut self, addr: A, message: S) -> Result<()> {
-        let bytes = Packet::new(message).as_bytes();
+        let packet = Packet::new(message);
+        let bytes = gzip_encode(packet);
         self.socket.send_to(&bytes, addr)?;
         Ok(())
     }
@@ -120,7 +123,7 @@ struct PacketHeader {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-struct Packet {
+pub struct Packet {
     header: PacketHeader,
     body: Vec<u8>,
 }
@@ -137,7 +140,7 @@ impl Packet {
         }
     }
 
-    fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         bincode::serialize(&self).expect("error serializing packet into bytes for transmission")
     }
 }

@@ -114,6 +114,8 @@ fn main() {
                             socket
                                 .send(source_addr, &ServerMessage::ConnectionAccepted)
                                 .unwrap();
+
+                            player = Some((source_addr, Grid::new(GRID_HEIGHT, GRID_WIDTH)));
                         }
                     }
                 }
