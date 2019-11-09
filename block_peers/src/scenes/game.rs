@@ -1,10 +1,12 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::rect::Rect;
+
 use std::net::SocketAddr;
 
 use crate::grid::{Grid, GridInputEvent};
 use crate::net::{ClientMessage, ServerMessage, Socket};
-use crate::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
+use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::{AppLifecycleEvent, Scene};
 use crate::scenes::GameOverScene;
 
@@ -118,6 +120,12 @@ impl Scene for GameScene {
     }
 
     fn render(&self, renderer: &mut Renderer) {
+        renderer.render_image(
+            Image::PlayingField,
+            Rect::new(0, 0, 800, 600),
+            Opacity::Opaque,
+        );
+
         for (idx, grid) in self.grids.iter().enumerate() {
             let (x_offset, y_offset) =
                 grid_offset(grid.size(), idx as u32, self.grids.len() as u32);
