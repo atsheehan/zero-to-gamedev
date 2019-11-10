@@ -24,6 +24,7 @@ const MICROSECONDS_PER_TICK: u64 = MICROSECONDS_PER_SECOND / TICKS_PER_SECOND;
 
 const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+const DEFAULT_PLAYERS_PER_GAME: u32 = 1;
 
 struct Connection {
     // TODO: reassess whether we need when introducing multiplayer
@@ -93,12 +94,14 @@ fn main() {
                 // state. The next tick will send the game state to
                 // the clients.
                 None => {
-                    if connections.len() >= 2 {
-                        let clients = connections.keys().cloned().take(2).collect();
-                        let grids = vec![
-                            Grid::new(GRID_HEIGHT, GRID_WIDTH),
-                            Grid::new(GRID_HEIGHT, GRID_WIDTH),
-                        ];
+                    let players_per_game = options.players_per_game as usize;
+
+                    if connections.len() >= players_per_game {
+                        let clients = connections.keys().cloned().take(players_per_game).collect();
+                        let mut grids = Vec::with_capacity(players_per_game);
+                        for _ in 0..players_per_game {
+                            grids.push(Grid::new(GRID_HEIGHT, GRID_WIDTH));
+                        }
 
                         game = Some((clients, grids));
                     }
@@ -194,6 +197,7 @@ fn main() {
 
 struct ServerOptions {
     port: u16,
+    players_per_game: u32,
 }
 
 fn get_options() -> ServerOptions {
@@ -207,6 +211,13 @@ fn get_options() -> ServerOptions {
         "PORT",
     );
 
+    opts.optopt(
+        "n",
+        "num-players",
+        "numbers of players per game (default 1)",
+        "COUNT",
+    );
+
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => panic!(f.to_string()),
@@ -218,5 +229,11 @@ fn get_options() -> ServerOptions {
         Err(_) => panic!("specified port not valid"),
     };
 
-    ServerOptions { port }
+    let players_per_game: u32 = match matches.opt_get("num-players") {
+        Ok(Some(count)) => count,
+        Ok(None) => DEFAULT_PLAYERS_PER_GAME,
+        Err(_) => panic!("specified num-players is not valid"),
+    };
+
+    ServerOptions { port, players_per_game }
 }
