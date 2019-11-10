@@ -34,11 +34,13 @@ pub enum Image {
     TealBrick,
     SmokeBrick(u16),
     Title,
+    PlayingField,
 }
 
 impl Image {
     fn source_rect(self) -> Rect {
         match self {
+            Self::PlayingField => Rect::new(0, 0, 800, 600),
             Self::Title => Rect::new(0, 64, 440, 65),
             Self::RedBrick => Rect::new(0, 0, 32, 32),
             Self::GreenBrick => Rect::new(32, 0, 32, 32),
@@ -112,6 +114,7 @@ pub enum Position {
 
 pub struct Renderer<'ttf> {
     canvas: WindowCanvas,
+    background: Texture,
     pieces: Texture,
     string_textures: HashMap<u64, Texture>,
     font: Font<'ttf, 'static>,
@@ -130,6 +133,10 @@ impl<'ttf> Renderer<'ttf> {
             .load_texture(Path::new("assets/tiles.png"))
             .unwrap();
 
+        let background = texture_creator
+            .load_texture(Path::new("assets/background.png"))
+            .unwrap();
+
         let font = ttf_context
             .load_font(Path::new("assets/VT323-Regular.ttf"), 20)
             .unwrap();
@@ -139,6 +146,7 @@ impl<'ttf> Renderer<'ttf> {
         Self {
             canvas,
             pieces,
+            background,
             string_textures,
             font,
             x_offset: 0,
@@ -175,10 +183,19 @@ impl<'ttf> Renderer<'ttf> {
     pub fn render_image(&mut self, image: Image, dest_rect: Rect, opacity: Opacity) {
         let dest_rect = translate(dest_rect, self.x_offset, self.y_offset);
 
-        self.pieces.set_alpha_mod(opacity.alpha());
-        self.canvas
-            .copy(&self.pieces, image.source_rect(), dest_rect)
-            .expect("failed to render image");
+        match image {
+            Image::PlayingField => {
+                self.canvas
+                    .copy(&self.background, image.source_rect(), dest_rect)
+                    .expect("failed to render image");
+            }
+            _ => {
+                self.pieces.set_alpha_mod(opacity.alpha());
+                self.canvas
+                    .copy(&self.pieces, image.source_rect(), dest_rect)
+                    .expect("failed to render image");
+            }
+        }
     }
 
     pub fn render_text(&mut self, text: Text) {

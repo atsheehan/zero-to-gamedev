@@ -116,12 +116,13 @@ impl Scene for ConnectScene {
         }
 
         match self.socket.receive::<ServerMessage>() {
-            Ok(Some((source_addr, ServerMessage::Sync { grid }))) => {
+            Ok(Some((source_addr, ServerMessage::Sync { player_id, grids }))) => {
                 debug!("connected to server at {:?}", source_addr);
 
                 match self.state {
                     ConnectionState::Connected => Box::new(GameScene::new(
-                        grid.into_owned(),
+                        player_id,
+                        grids.into_owned(),
                         self.socket,
                         self.server_addr,
                     )),
