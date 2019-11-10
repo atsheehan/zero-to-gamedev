@@ -107,7 +107,7 @@ impl Socket {
 
     pub fn send<A: ToSocketAddrs, S: Serialize>(&mut self, addr: A, message: S) -> Result<()> {
         let packet = Packet::new(message);
-        let bytes = gzip_encode(packet);
+        let bytes = gzip_encode(&packet.as_bytes());
         self.socket.send_to(&bytes, addr)?;
         Ok(())
     }
@@ -123,7 +123,7 @@ struct PacketHeader {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Packet {
+struct Packet {
     header: PacketHeader,
     body: Vec<u8>,
 }
@@ -140,7 +140,7 @@ impl Packet {
         }
     }
 
-    pub fn as_bytes(&self) -> Vec<u8> {
+    fn as_bytes(&self) -> Vec<u8> {
         bincode::serialize(&self).expect("error serializing packet into bytes for transmission")
     }
 }
