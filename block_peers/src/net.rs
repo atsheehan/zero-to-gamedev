@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use std::io::{Error, ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
+use crate::codec::{gzip_decode, gzip_encode};
 use crate::grid::{Grid, GridInputEvent};
 
 lazy_static! {
@@ -96,8 +97,9 @@ impl Socket {
         };
 
         let data = &self.buffer[..bytes_received];
+        let decoded = gzip_decode(&data);
 
-        match bincode::deserialize(&data) {
+        match bincode::deserialize(&decoded) {
             Ok(packet) => {
                 let packet: Packet = packet;
 
@@ -114,7 +116,8 @@ impl Socket {
     }
 
     pub fn send<A: ToSocketAddrs, S: Serialize>(&mut self, addr: A, message: S) -> Result<()> {
-        let bytes = Packet::new(message).as_bytes();
+        let packet = Packet::new(message);
+        let bytes = gzip_encode(&packet.as_bytes());
         self.socket.send_to(&bytes, addr)?;
         Ok(())
     }
