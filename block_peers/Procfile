@@ -1,3 +1,2 @@
 server: cargo run --bin server
-client_a: cargo run --bin client
-client_b: cargo run --bin client
+client: cargo run --bin client
