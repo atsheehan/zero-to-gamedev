@@ -235,5 +235,8 @@ fn get_options() -> ServerOptions {
         Err(_) => panic!("specified num-players is not valid"),
     };
 
-    ServerOptions { port, players_per_game }
+    ServerOptions {
+        port,
+        players_per_game,
+    }
 }
