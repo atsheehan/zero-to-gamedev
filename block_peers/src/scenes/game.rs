@@ -1,23 +1,27 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::rect::Rect;
+
 use std::net::SocketAddr;
 
 use crate::grid::{Grid, GridInputEvent};
 use crate::net::{ClientMessage, ServerMessage, Socket};
-use crate::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
+use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::{AppLifecycleEvent, Scene};
 use crate::scenes::GameOverScene;
 
 pub struct GameScene {
-    grid: Grid,
+    player_id: u32,
+    grids: Vec<Grid>,
     socket: Socket,
     address: SocketAddr,
 }
 
 impl GameScene {
-    pub fn new(grid: Grid, socket: Socket, address: SocketAddr) -> Self {
+    pub fn new(player_id: u32, grids: Vec<Grid>, socket: Socket, address: SocketAddr) -> Self {
         Self {
-            grid,
+            player_id,
+            grids,
             socket,
             address,
         }
@@ -37,6 +41,8 @@ impl Scene for GameScene {
     }
 
     fn input(mut self: Box<Self>, event: Event) -> Box<dyn Scene> {
+        let player_id = self.player_id;
+
         match event {
             Event::KeyDown {
                 keycode: Some(Keycode::A),
@@ -45,7 +51,10 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::MoveLeft),
+                        &ClientMessage::Command {
+                            player_id,
+                            event: GridInputEvent::MoveLeft,
+                        },
                     )
                     .unwrap();
             }
@@ -56,7 +65,10 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::MoveRight),
+                        &ClientMessage::Command {
+                            player_id,
+                            event: GridInputEvent::MoveRight,
+                        },
                     )
                     .unwrap();
             }
@@ -67,7 +79,10 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::MoveDown),
+                        &ClientMessage::Command {
+                            player_id,
+                            event: GridInputEvent::MoveDown,
+                        },
                     )
                     .unwrap();
             }
@@ -78,7 +93,10 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::ForceToBottom),
+                        &ClientMessage::Command {
+                            player_id,
+                            event: GridInputEvent::ForceToBottom,
+                        },
                     )
                     .unwrap();
             }
@@ -89,7 +107,10 @@ impl Scene for GameScene {
                 self.socket
                     .send(
                         self.address,
-                        &ClientMessage::Command(GridInputEvent::Rotate),
+                        &ClientMessage::Command {
+                            player_id,
+                            event: GridInputEvent::Rotate,
+                        },
                     )
                     .unwrap();
             }
@@ -99,24 +120,46 @@ impl Scene for GameScene {
     }
 
     fn render(&self, renderer: &mut Renderer) {
-        let (x_offset, y_offset) = grid_offset(self.grid.size());
+        renderer.render_image(
+            Image::PlayingField,
+            Rect::new(0, 0, 800, 600),
+            Opacity::Opaque,
+        );
 
-        renderer.set_offset(x_offset, y_offset);
-        self.grid.render(renderer);
-        renderer.set_offset(0, 0);
+        for (idx, grid) in self.grids.iter().enumerate() {
+            let (x_offset, y_offset) =
+                grid_offset(grid.size(), idx as u32, self.grids.len() as u32);
+            renderer.set_offset(x_offset, y_offset);
+            grid.render(renderer);
+            renderer.set_offset(0, 0);
+        }
     }
 
     fn update(mut self: Box<Self>) -> Box<dyn Scene> {
-        if self.grid.gameover {
+        if self.grids.iter().any(|grid| grid.gameover) {
             return Box::new(GameOverScene::new(self.socket, self.address));
         }
 
         match self.socket.receive::<ServerMessage>() {
-            Ok(Some((_source_addr, ServerMessage::Sync { grid }))) => {
-                self.grid = grid.into_owned();
+            Ok(Some((
+                _source_addr,
+                ServerMessage::Sync {
+                    player_id: _,
+                    grids,
+                },
+            ))) => {
+                self.grids = grids.into_owned();
                 self
             }
-            Ok(_) => self,
+            Ok(Some((_source_addr, ServerMessage::ConnectionRejected))) => {
+                error!("received reject message when not appropriate");
+                self
+            }
+            Ok(None) => self,
+            Ok(Some((_source_addr, message))) => {
+                debug!("received unexpected message: {:?}", message);
+                self
+            }
             Err(_) => {
                 error!("received unknown message");
                 panic!("expected game state to be given from server on init")
@@ -125,11 +168,15 @@ impl Scene for GameScene {
     }
 }
 
-fn grid_offset(grid_size: (u32, u32)) -> (i32, i32) {
+fn grid_offset(grid_size: (u32, u32), index: u32, num_grids: u32) -> (i32, i32) {
     let (grid_width, grid_height) = grid_size;
 
+    // Slice up the viewport into equal sized chunks
+    let chunk_width = VIEWPORT_WIDTH / num_grids;
+
+    // Center the grid within the chunk
     (
-        (VIEWPORT_WIDTH - grid_width) as i32 / 2,
+        (index * chunk_width) as i32 + (chunk_width - grid_width) as i32 / 2,
         (VIEWPORT_HEIGHT - grid_height) as i32 / 2,
     )
 }
