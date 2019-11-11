@@ -8,29 +8,28 @@ use crate::scene::{AppLifecycleEvent, Scene};
 use crate::text::Text;
 
 pub struct GameOverScene {
-    socket: Socket,
     address: SocketAddr,
 }
 
 impl GameOverScene {
-    pub fn new(socket: Socket, address: SocketAddr) -> Self {
-        Self { socket, address }
+    pub fn new(address: SocketAddr) -> Self {
+        Self { address }
     }
 }
 
 impl Scene for GameOverScene {
-    fn lifecycle(&mut self, event: AppLifecycleEvent) {
+    fn lifecycle(&mut self, socket: &mut Socket, event: AppLifecycleEvent) {
         match event {
             AppLifecycleEvent::Shutdown => {
                 trace!("sending disconnect to the server");
-                self.socket
+                socket
                     .send(self.address, &ClientMessage::Disconnect)
                     .unwrap();
             }
         }
     }
 
-    fn input(self: Box<Self>, _event: Event) -> Box<dyn Scene> {
+    fn input(self: Box<Self>, _socket: &mut Socket, _event: Event) -> Box<dyn Scene> {
         self
     }
 
@@ -43,7 +42,7 @@ impl Scene for GameOverScene {
         );
     }
 
-    fn update(self: Box<Self>) -> Box<dyn Scene> {
+    fn update(self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
         self
     }
 }

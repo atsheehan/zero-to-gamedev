@@ -10,6 +10,7 @@ use std::sync::atomic::Ordering;
 use crate::ai::DumbAI;
 use crate::brick::CELL_SIZE;
 use crate::grid::Grid;
+use crate::net::Socket;
 use crate::piece::Piece;
 use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::Scene;
@@ -48,7 +49,7 @@ impl TitleScene {
 }
 
 impl Scene for TitleScene {
-    fn input(mut self: Box<Self>, event: Event) -> Box<dyn Scene> {
+    fn input(mut self: Box<Self>, _socket: &mut Socket, event: Event) -> Box<dyn Scene> {
         match event {
             Event::KeyDown {
                 keycode: Some(Keycode::Return),
@@ -138,7 +139,7 @@ impl Scene for TitleScene {
         );
     }
 
-    fn update(mut self: Box<Self>) -> Box<dyn Scene> {
+    fn update(mut self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
         self.ai.update();
         self
     }
