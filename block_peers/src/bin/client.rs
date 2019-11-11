@@ -15,7 +15,7 @@ use std::time::{Duration, Instant};
 
 // Internal
 use block_peers::logging;
-use block_peers::net::Socket;
+use block_peers::net::{ServerMessage, Socket};
 use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use block_peers::scene::{AppLifecycleEvent, Scene};
 use block_peers::scenes::TitleScene;
@@ -70,6 +70,21 @@ pub fn main() {
     let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr));
 
     'running: loop {
+        // Network
+        loop {
+            match socket.receive::<ServerMessage>() {
+                Ok(Some((source_addr, message))) => {
+                    scene = scene.handle_message(&mut socket, source_addr, message);
+                }
+                Ok(None) => {
+                    break;
+                }
+                Err(_) => {
+                    error!("received unknown message");
+                }
+            }
+        }
+
         // Input
         for event in event_pump.poll_iter() {
             match event {

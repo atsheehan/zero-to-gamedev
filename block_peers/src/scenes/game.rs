@@ -133,35 +133,29 @@ impl Scene for GameScene {
         }
     }
 
-    fn update(mut self: Box<Self>, socket: &mut Socket) -> Box<dyn Scene> {
-        if self.grids.iter().any(|grid| grid.gameover) {
-            return Box::new(GameOverScene::new(self.address));
-        }
-
-        match socket.receive::<ServerMessage>() {
-            Ok(Some((
-                _source_addr,
-                ServerMessage::Sync {
-                    player_id: _,
-                    grids,
-                },
-            ))) => {
+    fn handle_message(
+        mut self: Box<Self>,
+        _socket: &mut Socket,
+        _source_addr: SocketAddr,
+        message: ServerMessage,
+    ) -> Box<dyn Scene> {
+        match message {
+            ServerMessage::Sync {
+                player_id: _,
+                grids,
+            } => {
                 self.grids = grids.into_owned();
                 self
             }
-            Ok(Some((_source_addr, ServerMessage::ConnectionRejected))) => {
-                error!("received reject message when not appropriate");
-                self
-            }
-            Ok(None) => self,
-            Ok(Some((_source_addr, message))) => {
-                debug!("received unexpected message: {:?}", message);
-                self
-            }
-            Err(_) => {
-                error!("received unknown message");
-                panic!("expected game state to be given from server on init")
-            }
+            _ => self,
+        }
+    }
+
+    fn update(self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
+        if self.grids.iter().any(|grid| grid.gameover) {
+            Box::new(GameOverScene::new(self.address))
+        } else {
+            self
         }
     }
 }
