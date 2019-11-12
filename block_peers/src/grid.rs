@@ -124,11 +124,11 @@ impl Grid {
             match self.cells[idx] {
                 Brick::Occupied(brick_type) => {
                     let image = Image::from_brick_type(brick_type);
-                    renderer.render_image(image, cell.rect(), Opacity::Opaque);
+                    renderer.render_image(image, cell.into(), Opacity::Opaque);
                 }
                 Brick::Breaking(frame) => {
                     let image = Image::from_brick_type(BrickType::Smoke(frame));
-                    renderer.render_image(image, cell.rect(), Opacity::Opaque);
+                    renderer.render_image(image, cell.into(), Opacity::Opaque);
                 }
                 _ => {}
             }
@@ -258,7 +258,7 @@ impl Grid {
 
     fn render_piece(&self, renderer: &mut Renderer, piece: &Piece, opacity: Opacity) {
         for cell in piece.global_iter() {
-            renderer.render_image(piece.image(), cell.rect(), opacity);
+            renderer.render_image(piece.image(), cell.into(), opacity);
         }
     }
 

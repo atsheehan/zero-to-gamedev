@@ -17,8 +17,8 @@ pub struct GridCell {
     pub row: i32,
 }
 
-impl GridCell {
-    pub fn rect(&self) -> Rect {
+impl Into<Rect> for GridCell {
+    fn into(self) -> Rect {
         Rect::new(
             self.col * CELL_SIZE as i32,
             self.row * CELL_SIZE as i32,
