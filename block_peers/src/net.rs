@@ -99,17 +99,13 @@ impl Socket {
         let data = &self.buffer[..bytes_received];
         let decoded = gzip_decode(&data);
 
-        match bincode::deserialize(&decoded) {
+        match bincode::deserialize::<Packet<D>>(&decoded) {
             Ok(packet) => {
-                let packet: Packet = packet;
-
                 if packet.header.protocol_id != *PROTOCOL_ID {
                     return Err(Error::new(ErrorKind::Other, "incorrect protocol id"));
                 }
 
-                Ok(bincode::deserialize(&packet.body)
-                    .ok()
-                    .map(|message| (source_addr, message)))
+                Ok(Some((source_addr, packet.message)))
             }
             Err(_) => Err(Error::new(ErrorKind::Other, "unable to deserialize packet")),
         }
@@ -133,20 +129,18 @@ struct PacketHeader {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-struct Packet {
+struct Packet<S> {
     header: PacketHeader,
-    body: Vec<u8>,
+    message: S,
 }
 
-impl Packet {
-    fn new<S: Serialize>(message: S) -> Self {
-        let body = bincode::serialize(&message).unwrap();
-
+impl<S: Serialize> Packet<S> {
+    fn new(message: S) -> Self {
         Self {
             header: PacketHeader {
                 protocol_id: *PROTOCOL_ID,
             },
-            body,
+            message,
         }
     }
 
