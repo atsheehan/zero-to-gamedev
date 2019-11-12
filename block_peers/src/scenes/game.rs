@@ -13,34 +13,32 @@ use crate::scenes::GameOverScene;
 pub struct GameScene {
     player_id: u32,
     grids: Vec<Grid>,
-    socket: Socket,
     address: SocketAddr,
 }
 
 impl GameScene {
-    pub fn new(player_id: u32, grids: Vec<Grid>, socket: Socket, address: SocketAddr) -> Self {
+    pub fn new(player_id: u32, grids: Vec<Grid>, address: SocketAddr) -> Self {
         Self {
             player_id,
             grids,
-            socket,
             address,
         }
     }
 }
 
 impl Scene for GameScene {
-    fn lifecycle(&mut self, event: AppLifecycleEvent) {
+    fn lifecycle(&mut self, socket: &mut Socket, event: AppLifecycleEvent) {
         match event {
             AppLifecycleEvent::Shutdown => {
                 trace!("sending disconnect to the server");
-                self.socket
+                socket
                     .send(self.address, &ClientMessage::Disconnect)
                     .unwrap();
             }
         }
     }
 
-    fn input(mut self: Box<Self>, event: Event) -> Box<dyn Scene> {
+    fn input(self: Box<Self>, socket: &mut Socket, event: Event) -> Box<dyn Scene> {
         let player_id = self.player_id;
 
         match event {
@@ -48,7 +46,7 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::A),
                 ..
             } => {
-                self.socket
+                socket
                     .send(
                         self.address,
                         &ClientMessage::Command {
@@ -62,7 +60,7 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::D),
                 ..
             } => {
-                self.socket
+                socket
                     .send(
                         self.address,
                         &ClientMessage::Command {
@@ -76,7 +74,7 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::S),
                 ..
             } => {
-                self.socket
+                socket
                     .send(
                         self.address,
                         &ClientMessage::Command {
@@ -90,7 +88,7 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::W),
                 ..
             } => {
-                self.socket
+                socket
                     .send(
                         self.address,
                         &ClientMessage::Command {
@@ -104,7 +102,7 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::E),
                 ..
             } => {
-                self.socket
+                socket
                     .send(
                         self.address,
                         &ClientMessage::Command {
@@ -135,12 +133,12 @@ impl Scene for GameScene {
         }
     }
 
-    fn update(mut self: Box<Self>) -> Box<dyn Scene> {
+    fn update(mut self: Box<Self>, socket: &mut Socket) -> Box<dyn Scene> {
         if self.grids.iter().any(|grid| grid.gameover) {
-            return Box::new(GameOverScene::new(self.socket, self.address));
+            return Box::new(GameOverScene::new(self.address));
         }
 
-        match self.socket.receive::<ServerMessage>() {
+        match socket.receive::<ServerMessage>() {
             Ok(Some((
                 _source_addr,
                 ServerMessage::Sync {

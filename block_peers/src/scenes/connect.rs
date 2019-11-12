@@ -25,19 +25,14 @@ enum ConnectionState {
 
 pub struct ConnectScene {
     server_addr: SocketAddr,
-    socket: Socket,
-
     state: ConnectionState,
     connection_attempt_counter: u64,
 }
 
 impl ConnectScene {
     pub fn new(server_addr: SocketAddr) -> Self {
-        let socket = Socket::new().expect("could not open a new socket");
-
         Self {
             server_addr,
-            socket,
             state: ConnectionState::SendingConnectionRequest,
             connection_attempt_counter: 0,
         }
@@ -60,7 +55,7 @@ impl ConnectScene {
 }
 
 impl Scene for ConnectScene {
-    fn input(self: Box<Self>, _event: Event) -> Box<dyn Scene> {
+    fn input(self: Box<Self>, _socket: &mut Socket, _event: Event) -> Box<dyn Scene> {
         self
     }
 
@@ -92,7 +87,7 @@ impl Scene for ConnectScene {
         renderer.render_text(Text::new(message).center_xy(400, 300).height(40).build());
     }
 
-    fn update(mut self: Box<Self>) -> Box<dyn Scene> {
+    fn update(mut self: Box<Self>, socket: &mut Socket) -> Box<dyn Scene> {
         if self.connection_attempt_counter >= MAX_CONNECTION_ATTEMPTS {
             self.state = ConnectionState::TimedOut;
             return self;
@@ -101,21 +96,21 @@ impl Scene for ConnectScene {
         match self.state {
             ConnectionState::SendingConnectionRequest => {
                 debug!("sending connection request");
-                self.socket
+                socket
                     .send(self.server_addr, &ClientMessage::Connect)
                     .unwrap();
                 self.connection_attempt_counter += 1;
             }
             ConnectionState::SendingChallengeResponse { salt } => {
                 debug!("sending challenge response");
-                self.socket
+                socket
                     .send(self.server_addr, &ClientMessage::ChallengeResponse { salt })
                     .unwrap();
             }
             _ => {}
         }
 
-        match self.socket.receive::<ServerMessage>() {
+        match socket.receive::<ServerMessage>() {
             Ok(Some((source_addr, ServerMessage::Sync { player_id, grids }))) => {
                 debug!("connected to server at {:?}", source_addr);
 
@@ -123,7 +118,6 @@ impl Scene for ConnectScene {
                     ConnectionState::Connected => Box::new(GameScene::new(
                         player_id,
                         grids.into_owned(),
-                        self.socket,
                         self.server_addr,
                     )),
                     _ => self,

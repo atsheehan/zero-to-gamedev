@@ -15,6 +15,7 @@ use std::time::{Duration, Instant};
 
 // Internal
 use block_peers::logging;
+use block_peers::net::Socket;
 use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use block_peers::scene::{AppLifecycleEvent, Scene};
 use block_peers::scenes::TitleScene;
@@ -62,6 +63,9 @@ pub fn main() {
     let mut ups = 0;
     let mut fps_timer = Instant::now();
 
+    // Network
+    let mut socket = Socket::new().expect("could not open a new socket");
+
     // Scene
     let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr));
 
@@ -79,12 +83,12 @@ pub fn main() {
                     ..
                 } => {
                     trace!("app asked to shutdown");
-                    scene.lifecycle(AppLifecycleEvent::Shutdown);
+                    scene.lifecycle(&mut socket, AppLifecycleEvent::Shutdown);
                     break 'running;
                 }
 
                 event => {
-                    scene = scene.input(event);
+                    scene = scene.input(&mut socket, event);
                 }
             }
         }
@@ -92,7 +96,7 @@ pub fn main() {
         // Update
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            scene = scene.update();
+            scene = scene.update(&mut socket);
             previous_instant += tick_duration;
             ups += 1;
         }
