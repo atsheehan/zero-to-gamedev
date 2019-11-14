@@ -2,7 +2,7 @@ use sdl2::event::Event;
 
 use std::net::SocketAddr;
 
-use crate::net::{ClientMessage, Socket};
+use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
 use crate::scene::{AppLifecycleEvent, Scene};
 use crate::text::Text;
@@ -40,6 +40,15 @@ impl Scene for GameOverScene {
                 .height(40)
                 .build(),
         );
+    }
+
+    fn handle_message(
+        self: Box<Self>,
+        _socket: &mut Socket,
+        _source_addr: SocketAddr,
+        _message: ServerMessage,
+    ) -> Box<dyn Scene> {
+        self
     }
 
     fn update(self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {

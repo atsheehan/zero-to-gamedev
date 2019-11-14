@@ -110,8 +110,17 @@ impl Scene for ConnectScene {
             _ => {}
         }
 
-        match socket.receive::<ServerMessage>() {
-            Ok(Some((source_addr, ServerMessage::Sync { player_id, grids }))) => {
+        self
+    }
+
+    fn handle_message(
+        mut self: Box<Self>,
+        _socket: &mut Socket,
+        source_addr: SocketAddr,
+        message: ServerMessage,
+    ) -> Box<dyn Scene> {
+        match message {
+            ServerMessage::Sync { player_id, grids } => {
                 debug!("connected to server at {:?}", source_addr);
 
                 match self.state {
@@ -123,25 +132,20 @@ impl Scene for ConnectScene {
                     _ => self,
                 }
             }
-            Ok(Some((source_addr, ServerMessage::ConnectionAccepted))) => {
+            ServerMessage::ConnectionAccepted => {
                 debug!("connection accepted for client {}", source_addr);
                 self.state = ConnectionState::Connected;
                 self
             }
-            Ok(Some((source_addr, ServerMessage::ConnectionRejected))) => {
+            ServerMessage::ConnectionRejected => {
                 error!("client {} was rejected!", source_addr);
                 self.state = ConnectionState::Rejected;
                 self
             }
-            Ok(Some((_source_addr, ServerMessage::Challenge { salt }))) => {
+            ServerMessage::Challenge { salt } => {
                 debug!("received challenge from server: {}", salt);
                 self.state = ConnectionState::SendingChallengeResponse { salt };
                 self
-            }
-            Ok(None) => self,
-            Err(_) => {
-                error!("received unknown message");
-                panic!("expected game state to be given from server on init")
             }
         }
     }

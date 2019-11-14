@@ -11,7 +11,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::ai::DumbAI;
 use crate::brick::CELL_SIZE;
 use crate::grid::Grid;
-use crate::net::Socket;
+use crate::net::{ServerMessage, Socket};
 use crate::piece::Piece;
 use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::Scene;
@@ -180,6 +180,15 @@ impl Scene for TitleScene {
                 .color(Color::RGB(128, 128, 128))
                 .build(),
         );
+    }
+
+    fn handle_message(
+        self: Box<Self>,
+        _socket: &mut Socket,
+        _source_addr: SocketAddr,
+        _message: ServerMessage,
+    ) -> Box<dyn Scene> {
+        self
     }
 
     fn update(mut self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
