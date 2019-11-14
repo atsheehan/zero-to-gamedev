@@ -180,8 +180,11 @@ impl<'ttf> Renderer<'ttf> {
     }
 
     // TODO: update function to use Position / Dimensions similar to render_text
-    pub fn render_image(&mut self, image: Image, dest_rect: Rect, opacity: Opacity) {
-        let dest_rect = translate(dest_rect, self.x_offset, self.y_offset);
+    pub fn render_image<R>(&mut self, image: Image, dest_rect: R, opacity: Opacity)
+    where
+        R: Into<Rect>,
+    {
+        let dest_rect = translate(dest_rect.into(), self.x_offset, self.y_offset);
 
         match image {
             Image::PlayingField => {
