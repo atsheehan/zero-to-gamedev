@@ -133,6 +133,14 @@ impl Scene for GameScene {
         }
     }
 
+    fn update(self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
+        if self.grids.iter().any(|grid| grid.gameover) {
+            Box::new(GameOverScene::new(self.address))
+        } else {
+            self
+        }
+    }
+
     fn handle_message(
         mut self: Box<Self>,
         _socket: &mut Socket,
@@ -148,14 +156,6 @@ impl Scene for GameScene {
                 self
             }
             _ => self,
-        }
-    }
-
-    fn update(self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
-        if self.grids.iter().any(|grid| grid.gameover) {
-            Box::new(GameOverScene::new(self.address))
-        } else {
-            self
         }
     }
 }

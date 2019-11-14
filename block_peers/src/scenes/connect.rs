@@ -87,6 +87,32 @@ impl Scene for ConnectScene {
         renderer.render_text(Text::new(message).center_xy(400, 300).height(40).build());
     }
 
+    fn update(mut self: Box<Self>, socket: &mut Socket) -> Box<dyn Scene> {
+        if self.connection_attempt_counter >= MAX_CONNECTION_ATTEMPTS {
+            self.state = ConnectionState::TimedOut;
+            return self;
+        }
+
+        match self.state {
+            ConnectionState::SendingConnectionRequest => {
+                debug!("sending connection request");
+                socket
+                    .send(self.server_addr, &ClientMessage::Connect)
+                    .unwrap();
+                self.connection_attempt_counter += 1;
+            }
+            ConnectionState::SendingChallengeResponse { salt } => {
+                debug!("sending challenge response");
+                socket
+                    .send(self.server_addr, &ClientMessage::ChallengeResponse { salt })
+                    .unwrap();
+            }
+            _ => {}
+        }
+
+        self
+    }
+
     fn handle_message(
         mut self: Box<Self>,
         _socket: &mut Socket,
@@ -122,32 +148,6 @@ impl Scene for ConnectScene {
                 self
             }
         }
-    }
-
-    fn update(mut self: Box<Self>, socket: &mut Socket) -> Box<dyn Scene> {
-        if self.connection_attempt_counter >= MAX_CONNECTION_ATTEMPTS {
-            self.state = ConnectionState::TimedOut;
-            return self;
-        }
-
-        match self.state {
-            ConnectionState::SendingConnectionRequest => {
-                debug!("sending connection request");
-                socket
-                    .send(self.server_addr, &ClientMessage::Connect)
-                    .unwrap();
-                self.connection_attempt_counter += 1;
-            }
-            ConnectionState::SendingChallengeResponse { salt } => {
-                debug!("sending challenge response");
-                socket
-                    .send(self.server_addr, &ClientMessage::ChallengeResponse { salt })
-                    .unwrap();
-            }
-            _ => {}
-        }
-
-        self
     }
 }
 
