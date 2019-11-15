@@ -19,7 +19,7 @@ use crate::scenes::ConnectScene;
 use crate::sound::SOUND_IS_ENABLED;
 use crate::text::Text;
 
-const GAME_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const GAME_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct TitleScene {
     server_addr: SocketAddr,
@@ -212,7 +212,7 @@ impl MenuState {
     fn iter() -> Iter<'static, MenuState> {
         use MenuState::*;
         static STATES: [MenuState; 3] = [StartGame, ToggleSound, Quit];
-        STATES.into_iter()
+        STATES.iter()
     }
 
     fn text(&self) -> &'static str {

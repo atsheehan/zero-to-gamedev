@@ -118,14 +118,14 @@ impl Brick {
         }
     }
 
-    pub fn is_broken(&self) -> bool {
+    pub fn is_broken(self) -> bool {
         match self {
             Brick::Broken => true,
             _ => false,
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn is_empty(self) -> bool {
         match self {
             Brick::Empty => true,
             _ => false,
@@ -238,7 +238,7 @@ where
                 };
                 grid_cells.push(grid_cell);
 
-                let brick = self.cells[index].clone();
+                let brick = self.cells[index];
 
                 all_true &= (self.callback)(grid_cell, brick);
                 self.current_col += 1;

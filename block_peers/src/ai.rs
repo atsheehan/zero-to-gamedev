@@ -32,13 +32,13 @@ impl DumbAI {
                 0..=10 => {
                     self.grid.move_piece_to_bottom();
                 }
-                10..=17 => {
+                11..=17 => {
                     self.grid.rotate();
                 }
-                17..=90 => {
+                18..=90 => {
                     self.grid.move_piece_right();
                 }
-                90..=100 => {
+                91..=100 => {
                     self.grid.move_piece_left();
                 }
                 _ => {}

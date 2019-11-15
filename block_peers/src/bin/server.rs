@@ -116,7 +116,7 @@ fn main() {
                 match connections.entry(source_addr) {
                     Vacant(entry) => {
                         let client = Connection::new(source_addr);
-                        let salt = client.salt.clone();
+                        let salt = client.salt;
                         entry.insert(client);
                         socket
                             .send(source_addr, &ServerMessage::Challenge { salt })
