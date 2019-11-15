@@ -28,6 +28,7 @@ pub struct Grid {
     current_piece: Piece,
     drop_counter: u32,
     pub gameover: bool,
+    score: u32,
 }
 
 // ------------
@@ -48,6 +49,7 @@ impl Grid {
             staged_piece,
             drop_counter: 0,
             gameover: false,
+            score: 0,
         }
     }
 
@@ -137,6 +139,7 @@ impl Grid {
         self.render_staged_piece(renderer);
         self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
         self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
+        self.render_score(renderer);
     }
 }
 
@@ -217,12 +220,15 @@ impl Grid {
     }
 
     fn animate_full_lines(&mut self) {
+        let mut counter = 0;
         for MatchingLine { cells, .. } in self.lines_matching(|_, brick| !brick.is_empty()) {
+            counter += 1;
             for cell in cells {
                 let idx = self.cell_index(cell);
                 self.cells[idx] = Brick::Breaking(0);
             }
         }
+        self.score += counter * 1000;
     }
 
     fn move_bricks_down(&mut self, line: i32) {
@@ -281,6 +287,27 @@ impl Grid {
 
         self.render_piece(renderer, &self.staged_piece.move_down(), Opacity::Opaque);
         renderer.set_offset(x, y);
+    }
+
+    fn render_score(&self, renderer: &mut Renderer) {
+        let bg_color = Color::RGB(44, 44, 44);
+        let (x, y) = renderer.get_offset();
+
+        let (new_x, new_y) = (x, y + (CELL_SIZE * self.height) as i32);
+        renderer.set_offset(new_x, new_y);
+
+        let bg_width = CELL_SIZE * self.width;
+        renderer.fill_rect(Rect::new(0, 0, bg_width, CELL_SIZE * 2), bg_color);
+
+        let mut score_text = String::from("Score: ");
+        let current_score = self.score.to_string();
+        score_text.push_str(&current_score);
+        renderer.render_text(
+            Text::from(score_text)
+                .height(20)
+                .left_top_xy(10, 10)
+                .build(),
+        );
     }
 
     fn render_outline(&self, renderer: &mut Renderer) {
