@@ -29,6 +29,7 @@ pub struct Grid {
     drop_counter: u32,
     pub gameover: bool,
     score: u32,
+    hard_drop_count: u32,
 }
 
 // ------------
@@ -50,6 +51,7 @@ impl Grid {
             drop_counter: 0,
             gameover: false,
             score: 0,
+            hard_drop_count: 0,
         }
     }
 
@@ -93,7 +95,11 @@ impl Grid {
     }
 
     pub fn move_piece_to_bottom(&mut self) {
-        while !self.move_piece_down() {}
+        let mut hard_drop_count = 0;
+        while !self.move_piece_down() {
+            hard_drop_count += 1;
+        }
+        self.hard_drop_count = hard_drop_count;
     }
 
     pub fn update(&mut self) {
@@ -220,15 +226,43 @@ impl Grid {
     }
 
     fn animate_full_lines(&mut self) {
-        let mut counter = 0;
+        let mut number_lines_cleared = 0;
         for MatchingLine { cells, .. } in self.lines_matching(|_, brick| !brick.is_empty()) {
-            counter += 1;
+            number_lines_cleared += 1;
             for cell in cells {
                 let idx = self.cell_index(cell);
                 self.cells[idx] = Brick::Breaking(0);
             }
         }
-        self.score += counter * 1000;
+        self.add_score(number_lines_cleared);
+    }
+
+    fn add_score(&mut self, number_lines_cleared: u32) {
+        // https://tetris.wiki/Scoring#Original_BPS_scoring_system
+
+        // if nothing has been cleared, no score should be added
+        if number_lines_cleared == 0 {
+            return;
+        }
+
+        let points = match number_lines_cleared {
+            1 => 40,
+            2 => 100,
+            3 => 300,
+            4 => 1200,
+            _ => unreachable!("This case should never occur"),
+        };
+
+        // only add hard_drop_points if we've been hard dropped
+        let hard_drop_points = match self.hard_drop_count {
+            0 => 0,
+            _ => self.hard_drop_count + 1,
+        };
+
+        self.score += points + hard_drop_points;
+
+        // reset hard_drop_count for next piece
+        self.hard_drop_count = 0;
     }
 
     fn move_bricks_down(&mut self, line: i32) {
