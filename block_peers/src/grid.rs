@@ -333,7 +333,7 @@ impl Grid {
         let bg_width = CELL_SIZE * self.width;
         renderer.fill_rect(Rect::new(0, 0, bg_width, CELL_SIZE * 2), bg_color);
 
-        let score_text = String::from(format!("Score: {}", self.score));
+        let score_text = format!("Score: {}", self.score);
         renderer.render_text(
             Text::from(score_text)
                 .height(20)
