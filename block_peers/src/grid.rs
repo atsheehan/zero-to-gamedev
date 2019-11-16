@@ -398,6 +398,7 @@ impl Grid {
             bg_color,
         );
 
+        // Background lines for graph
         for i in 0..self.width {
             let x = i * CELL_SIZE;
 
@@ -406,7 +407,6 @@ impl Grid {
                 stripe_color,
             );
         }
-
         for i in 0..self.height {
             let y = i * CELL_SIZE;
 
@@ -415,5 +415,34 @@ impl Grid {
                 stripe_color,
             );
         }
+
+        // Gradient cross hairs
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let xx = x * CELL_SIZE;
+                let yy = y * CELL_SIZE;
+
+                let start_color = (56.0, 56.0, 56.0);
+                let end_color = (131.0, 161.0, 194.0);
+
+                let t =
+                    (y as f64 * CELL_SIZE as f64) / (self.height as f64 * CELL_SIZE as f64) - 0.2; // dampen a bit
+                let interp = lerp(start_color, end_color, t as f64);
+                let color = Color::RGB(interp.0 as u8, interp.1 as u8, interp.2 as u8);
+
+                if xx > 0 && yy > 0 {
+                    renderer.fill_rect(Rect::new((xx - 2) as i32, yy as i32, 5, 1), color);
+                    renderer.fill_rect(Rect::new(xx as i32, (yy - 2) as i32, 1, 5), color);
+                }
+            }
+        }
     }
+}
+
+fn lerp(start: (f64, f64, f64), end: (f64, f64, f64), time: f64) -> (f64, f64, f64) {
+    (
+        start.0 * (1f64 - time) + end.0 * time,
+        start.1 * (1f64 - time) + end.1 * time,
+        start.2 * (1f64 - time) + end.2 * time,
+    )
 }
