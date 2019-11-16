@@ -90,7 +90,7 @@ impl Scene for ConnectScene {
     fn update(
         mut self: Box<Self>,
         socket: &mut Socket,
-        sounds: &mut Vec<GameSoundEvent>,
+        _sounds: &mut Vec<GameSoundEvent>,
     ) -> Box<dyn Scene> {
         if self.connection_attempt_counter >= MAX_CONNECTION_ATTEMPTS {
             self.state = ConnectionState::TimedOut;

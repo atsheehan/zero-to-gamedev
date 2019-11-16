@@ -136,30 +136,31 @@ pub fn main() {
             scene = scene.update(&mut socket, &mut sound_events);
             previous_instant += tick_duration;
             ups += 1;
-
-            // Handle any sounds due to update
-            for event in sound_events.iter() {
-                match event {
-                    GameSoundEvent::LinesCleared(count) => match count {
-                        1 => {
-                            Channel::all().play(&smoke_1, 0).unwrap();
-                        }
-                        2 => {
-                            Channel::all().play(&smoke_2, 0).unwrap();
-                        }
-                        3 => {
-                            Channel::all().play(&smoke_3, 0).unwrap();
-                        }
-                        4 => {
-                            Channel::all().play(&smoke_4, 0).unwrap();
-                        }
-                        _ => unreachable!("tried to clear illegal number of lines"),
-                    },
-                }
-            }
-
-            sound_events.clear();
         }
+
+        // Handle any sounds due to update
+        for event in sound_events.iter() {
+            match event {
+                GameSoundEvent::LinesCleared(count) => match count {
+                    1 => {
+                        debug!("playing smoke 1");
+                        Channel::all().play(&smoke_1, 0).unwrap();
+                    }
+                    2 => {
+                        Channel::all().play(&smoke_2, 0).unwrap();
+                    }
+                    3 => {
+                        Channel::all().play(&smoke_3, 0).unwrap();
+                    }
+                    4 => {
+                        Channel::all().play(&smoke_4, 0).unwrap();
+                    }
+                    _ => unreachable!("tried to clear illegal number of lines"),
+                },
+            }
+        }
+
+        sound_events.clear();
 
         if scene.should_quit() {
             break 'running;

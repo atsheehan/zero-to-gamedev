@@ -88,6 +88,10 @@ fn main() {
                         };
                         socket.send(addr, &message).unwrap();
                     }
+
+                    for grid in grids.iter_mut() {
+                        grid.sound_events.clear();
+                    }
                 }
                 // If there isn't an active game, check if we have at
                 // least two clients connected and create a new game
