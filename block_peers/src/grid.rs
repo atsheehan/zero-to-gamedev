@@ -28,6 +28,8 @@ pub struct Grid {
     current_piece: Piece,
     drop_counter: u32,
     pub gameover: bool,
+    score: u32,
+    hard_drop_count: u32,
 }
 
 // ------------
@@ -48,6 +50,8 @@ impl Grid {
             staged_piece,
             drop_counter: 0,
             gameover: false,
+            score: 0,
+            hard_drop_count: 0,
         }
     }
 
@@ -91,7 +95,11 @@ impl Grid {
     }
 
     pub fn move_piece_to_bottom(&mut self) {
-        while !self.move_piece_down() {}
+        let mut hard_drop_count = 0;
+        while !self.move_piece_down() {
+            hard_drop_count += 1;
+        }
+        self.hard_drop_count = hard_drop_count;
     }
 
     pub fn update(&mut self) {
@@ -137,6 +145,7 @@ impl Grid {
         self.render_staged_piece(renderer);
         self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
         self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
+        self.render_score(renderer);
     }
 }
 
@@ -217,20 +226,51 @@ impl Grid {
     }
 
     fn animate_full_lines(&mut self) {
+        let mut number_lines_cleared = 0;
         for MatchingLine { cells, .. } in self.lines_matching(|_, brick| !brick.is_empty()) {
+            number_lines_cleared += 1;
             for cell in cells {
                 let idx = self.cell_index(cell);
                 self.cells[idx] = Brick::Breaking(0);
             }
         }
+        self.add_score(number_lines_cleared);
+    }
+
+    fn add_score(&mut self, number_lines_cleared: u32) {
+        // https://tetris.wiki/Scoring#Original_BPS_scoring_system
+
+        // if nothing has been cleared, no score should be added
+        if number_lines_cleared == 0 {
+            return;
+        }
+
+        let points = match number_lines_cleared {
+            1 => 40,
+            2 => 100,
+            3 => 300,
+            4 => 1200,
+            _ => unreachable!("This case should never occur"),
+        };
+
+        // only add hard_drop_points if we've been hard dropped
+        let hard_drop_points = match self.hard_drop_count {
+            0 => 0,
+            _ => self.hard_drop_count + 1,
+        };
+
+        self.score += points + hard_drop_points;
+
+        // reset hard_drop_count for next piece
+        self.hard_drop_count = 0;
     }
 
     fn move_bricks_down(&mut self, line: i32) {
-        for row in (0..line).into_iter().rev() {
+        for row in (0..line).rev() {
             for col in 0..self.width {
                 let cell = GridCell {
                     col: col as i32,
-                    row: row,
+                    row,
                 };
                 let new_cell = cell + GridCell { col: 0, row: 1 };
 
@@ -281,6 +321,25 @@ impl Grid {
 
         self.render_piece(renderer, &self.staged_piece.move_down(), Opacity::Opaque);
         renderer.set_offset(x, y);
+    }
+
+    fn render_score(&self, renderer: &mut Renderer) {
+        let bg_color = Color::RGB(44, 44, 44);
+        let (x, y) = renderer.get_offset();
+
+        let (new_x, new_y) = (x, y + (CELL_SIZE * self.height) as i32);
+        renderer.set_offset(new_x, new_y);
+
+        let bg_width = CELL_SIZE * self.width;
+        renderer.fill_rect(Rect::new(0, 0, bg_width, CELL_SIZE * 2), bg_color);
+
+        let score_text = format!("Score: {}", self.score);
+        renderer.render_text(
+            Text::from(score_text)
+                .height(20)
+                .left_top_xy(10, 10)
+                .build(),
+        );
     }
 
     fn render_outline(&self, renderer: &mut Renderer) {

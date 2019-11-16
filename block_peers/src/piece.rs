@@ -10,7 +10,7 @@ use crate::render::Image;
 
 type PieceShape = [bool; 16];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 const SHAPES: [PieceShape; 7] = [
     [
         false, false, false,  false,
@@ -92,7 +92,7 @@ impl Piece {
         Self {
             shape_idx: self.shape_idx,
             rotation: self.rotation.next(),
-            position: self.position.clone(),
+            position: self.position,
         }
     }
 
@@ -229,7 +229,7 @@ enum Rotation {
 }
 
 impl Rotation {
-    fn next(&self) -> Rotation {
+    fn next(self) -> Rotation {
         use Rotation::*;
         match self {
             Zero => Ninety,
