@@ -14,6 +14,8 @@ pub enum AppLifecycleEvent {
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum GameSoundEvent {
     LinesCleared(u8),
+    TurnSoundsOff,
+    TurnSoundsOn,
 }
 
 pub trait Scene {

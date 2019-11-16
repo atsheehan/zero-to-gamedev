@@ -9,10 +9,13 @@ extern crate simplelog;
 use getopts::Options;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::mixer::{self, Channel, Chunk, InitFlag, AUDIO_S16LSB, DEFAULT_CHANNELS};
+use sdl2::mixer::{self, Channel, Chunk};
+
+// Std
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 // Internal
@@ -21,6 +24,7 @@ use block_peers::net::{ServerMessage, Socket};
 use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use block_peers::scene::{AppLifecycleEvent, GameSoundEvent, Scene};
 use block_peers::scenes::TitleScene;
+use block_peers::sound::SOUND_IS_ENABLED;
 
 // Constants
 const WINDOW_WIDTH: u32 = VIEWPORT_WIDTH;
@@ -44,20 +48,22 @@ pub fn main() {
     let ttf = sdl2::ttf::init().unwrap();
 
     // Audio
-    let frequency = 44_100;
-    let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
-    let channels = DEFAULT_CHANNELS; // Stereo
-    let chunk_size = 1_024;
-    mixer::open_audio(frequency, format, channels, chunk_size).unwrap();
-    let _mixer_context =
-        mixer::init(InitFlag::MP3 | InitFlag::FLAC | InitFlag::MOD | InitFlag::OGG).unwrap();
-
+    mixer::open_audio(44_100, mixer::AUDIO_S16LSB, mixer::DEFAULT_CHANNELS, 1_024).unwrap();
     mixer::allocate_channels(4);
 
+    let background_music =
+        sdl2::mixer::Music::from_file(Path::new("../../assets/background.wav")).unwrap();
     let smoke_1 = Chunk::from_file(Path::new("../../assets/smoke-1.wav")).unwrap();
     let smoke_2 = Chunk::from_file(Path::new("../../assets/smoke-2.wav")).unwrap();
     let smoke_3 = Chunk::from_file(Path::new("../../assets/smoke-3.wav")).unwrap();
     let smoke_4 = Chunk::from_file(Path::new("../../assets/smoke-4.wav")).unwrap();
+
+    // Volume is between 0-128. 32 will play at quarter volume for chiller background music
+    let mut is_paused = false;
+    sdl2::mixer::Music::set_volume(32);
+    background_music
+        .play(std::i32::MAX) // effectively infinitely play in background
+        .expect("unable to play background music");
 
     // Draw
     let mut window_builder = video_subsystem.window("Block Wars", WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -143,20 +149,38 @@ pub fn main() {
             match event {
                 GameSoundEvent::LinesCleared(count) => match count {
                     1 => {
-                        debug!("playing smoke 1");
-                        Channel::all().play(&smoke_1, 0).unwrap();
+                        if SOUND_IS_ENABLED.load(Ordering::Relaxed) {
+                            Channel::all().play(&smoke_1, 0).unwrap();
+                        }
                     }
                     2 => {
-                        Channel::all().play(&smoke_2, 0).unwrap();
+                        if SOUND_IS_ENABLED.load(Ordering::Relaxed) {
+                            Channel::all().play(&smoke_2, 0).unwrap();
+                        }
                     }
                     3 => {
-                        Channel::all().play(&smoke_3, 0).unwrap();
+                        if SOUND_IS_ENABLED.load(Ordering::Relaxed) {
+                            Channel::all().play(&smoke_3, 0).unwrap();
+                        }
                     }
                     4 => {
-                        Channel::all().play(&smoke_4, 0).unwrap();
+                        if SOUND_IS_ENABLED.load(Ordering::Relaxed) {
+                            Channel::all().play(&smoke_4, 0).unwrap();
+                        }
                     }
                     _ => unreachable!("tried to clear illegal number of lines"),
                 },
+                GameSoundEvent::TurnSoundsOff => {
+                    is_paused = true;
+                    sdl2::mixer::Music::halt();
+                }
+                GameSoundEvent::TurnSoundsOn => {
+                    if is_paused {
+                        background_music
+                            .play(std::i32::MAX) // effectively infinitely play in background
+                            .expect("unable to play background music");
+                    }
+                }
             }
         }
 
