@@ -124,6 +124,14 @@ impl Grid {
     }
 
     pub fn render(&self, renderer: &mut Renderer) {
+        let section_margin = 8;
+        let (x, y) = renderer.get_offset();
+
+        self.render_staged_piece(renderer);
+
+        let (new_x, new_y) = (x, y + section_margin);
+        renderer.set_offset(new_x, new_y);
+
         self.render_outline(renderer);
 
         // Render occupied cells on the board
@@ -142,10 +150,12 @@ impl Grid {
             }
         }
 
-        self.render_staged_piece(renderer);
         self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
         self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
+        renderer.set_offset(new_x, new_y + section_margin);
         self.render_score(renderer);
+
+        renderer.set_offset(x, y);
     }
 }
 
@@ -156,6 +166,29 @@ impl Grid {
 // These methods are only for convenience in creating the menu title screen animation.
 // Avoid using them in the 'real' game.
 impl Grid {
+    pub fn render_for_title(&self, renderer: &mut Renderer) {
+        self.render_outline(renderer);
+
+        // Render occupied cells on the board
+        for cell in self.grid_iterator() {
+            let idx = self.cell_index(cell);
+            match self.cells[idx] {
+                Brick::Occupied(brick_type) => {
+                    let image = Image::from_brick_type(brick_type);
+                    renderer.render_image(image, cell, Opacity::Opaque);
+                }
+                Brick::Breaking(frame) => {
+                    let image = Image::from_brick_type(BrickType::Smoke(frame));
+                    renderer.render_image(image, cell, Opacity::Opaque);
+                }
+                _ => {}
+            }
+        }
+
+        self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
+        self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
+    }
+
     pub fn place_piece_at_bottom(&mut self, piece: Piece) {
         let mut piece = piece;
         let mut next = piece.move_down();
@@ -303,6 +336,8 @@ impl Grid {
     }
 
     fn render_staged_piece(&self, renderer: &mut Renderer) {
+        let border_width = 2;
+        let border_color = Color::RGB(95, 124, 202);
         let bg_color = Color::RGB(44, 44, 44);
         let (x, y) = renderer.get_offset();
 
@@ -310,8 +345,19 @@ impl Grid {
         renderer.set_offset(new_x, new_y);
 
         let bg_width = self.width * CELL_SIZE;
-        renderer.fill_rect(Rect::new(0, 0, bg_width, 5 * CELL_SIZE), bg_color);
+        let box_height = 5 * CELL_SIZE;
+        renderer.fill_rect(Rect::new(0, 0, bg_width, box_height), bg_color);
 
+        renderer.fill_rect(Rect::new(0, 0, bg_width, 1 * CELL_SIZE), border_color);
+        renderer.fill_rect(Rect::new(0, 0, border_width, box_height), border_color);
+
+        renderer.set_offset(new_x + (bg_width - border_width) as i32, new_y);
+        renderer.fill_rect(Rect::new(0, 0, border_width, box_height), border_color);
+
+        renderer.set_offset(new_x, new_y + (box_height - border_width) as i32);
+        renderer.fill_rect(Rect::new(0, 0, bg_width, border_width), border_color);
+
+        renderer.set_offset(new_x, new_y);
         renderer.render_text(
             Text::new("Next Block")
                 .height(20)
@@ -324,7 +370,7 @@ impl Grid {
     }
 
     fn render_score(&self, renderer: &mut Renderer) {
-        let bg_color = Color::RGB(44, 44, 44);
+        let bg_color = Color::RGB(95, 124, 202);
         let (x, y) = renderer.get_offset();
 
         let (new_x, new_y) = (x, y + (CELL_SIZE * self.height) as i32);
