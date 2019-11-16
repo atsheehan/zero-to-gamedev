@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 use crate::grid::{Grid, GridInputEvent};
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
-use crate::scene::{AppLifecycleEvent, Scene};
+use crate::scene::{GameSoundEvent, AppLifecycleEvent, Scene};
 use crate::scenes::GameOverScene;
 
 pub struct GameScene {
@@ -133,7 +133,7 @@ impl Scene for GameScene {
         }
     }
 
-    fn update(self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
+    fn update(self: Box<Self>, socket: &mut Socket, _sounds: &mut Vec<GameSoundEvent>) -> Box<dyn Scene> {
         if self.grids.iter().any(|grid| grid.gameover) {
             Box::new(GameOverScene::new(self.address))
         } else {

@@ -14,7 +14,7 @@ use crate::grid::Grid;
 use crate::net::{ServerMessage, Socket};
 use crate::piece::Piece;
 use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
-use crate::scene::Scene;
+use crate::scene::{GameSoundEvent, Scene};
 use crate::scenes::ConnectScene;
 use crate::sound::SOUND_IS_ENABLED;
 use crate::text::Text;
@@ -191,7 +191,11 @@ impl Scene for TitleScene {
         self
     }
 
-    fn update(mut self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
+    fn update(
+        mut self: Box<Self>,
+        _socket: &mut Socket,
+        _sounds: &mut Vec<GameSoundEvent>,
+    ) -> Box<dyn Scene> {
         self.ai.update();
         self
     }

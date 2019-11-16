@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
-use crate::scene::{AppLifecycleEvent, Scene};
+use crate::scene::{GameSoundEvent, AppLifecycleEvent, Scene};
 use crate::text::Text;
 
 pub struct GameOverScene {
@@ -51,7 +51,7 @@ impl Scene for GameOverScene {
         self
     }
 
-    fn update(self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
+    fn update(self: Box<Self>, _socket: &mut Socket, _sounds: &mut Vec<GameSoundEvent>) -> Box<dyn Scene> {
         self
     }
 }

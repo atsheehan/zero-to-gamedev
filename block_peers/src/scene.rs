@@ -10,6 +10,10 @@ pub enum AppLifecycleEvent {
     Shutdown,
 }
 
+pub enum GameSoundEvent {
+    LinesCleared(u8)
+}
+
 pub trait Scene {
     fn lifecycle(&mut self, _socket: &mut Socket, _event: AppLifecycleEvent) {}
     fn input(self: Box<Self>, socket: &mut Socket, event: Event) -> Box<dyn Scene>;
@@ -20,7 +24,7 @@ pub trait Scene {
         source_addr: SocketAddr,
         message: ServerMessage,
     ) -> Box<dyn Scene>;
-    fn update(self: Box<Self>, socket: &mut Socket) -> Box<dyn Scene>;
+    fn update(self: Box<Self>, socket: &mut Socket, sounds: &mut Vec<GameSoundEvent>) -> Box<dyn Scene>;
     fn should_quit(&self) -> bool {
         false
     }

@@ -9,15 +9,17 @@ extern crate simplelog;
 use getopts::Options;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::mixer::{self, Channel, Chunk, InitFlag, AUDIO_S16LSB, DEFAULT_CHANNELS};
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 // Internal
 use block_peers::logging;
 use block_peers::net::{ServerMessage, Socket};
 use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
-use block_peers::scene::{AppLifecycleEvent, Scene};
+use block_peers::scene::{AppLifecycleEvent, GameSoundEvent, Scene};
 use block_peers::scenes::TitleScene;
 
 // Constants
@@ -37,8 +39,25 @@ pub fn main() {
     // Note: handles must stay in scope until end of program due to dropping.
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
+    let _audio = sdl_context.audio().unwrap();
     let _image = sdl2::image::init(sdl2::image::InitFlag::PNG).unwrap();
     let ttf = sdl2::ttf::init().unwrap();
+
+    // Audio
+    let frequency = 44_100;
+    let format = AUDIO_S16LSB; // signed 16 bit samples, in little-endian byte order
+    let channels = DEFAULT_CHANNELS; // Stereo
+    let chunk_size = 1_024;
+    mixer::open_audio(frequency, format, channels, chunk_size).unwrap();
+    let _mixer_context =
+        mixer::init(InitFlag::MP3 | InitFlag::FLAC | InitFlag::MOD | InitFlag::OGG).unwrap();
+
+    mixer::allocate_channels(4);
+
+    let smoke_1 = Chunk::from_file(Path::new("../../assets/smoke-1.wav")).unwrap();
+    let smoke_2 = Chunk::from_file(Path::new("../../assets/smoke-2.wav")).unwrap();
+    let smoke_3 = Chunk::from_file(Path::new("../../assets/smoke-3.wav")).unwrap();
+    let smoke_4 = Chunk::from_file(Path::new("../../assets/smoke-4.wav")).unwrap();
 
     // Draw
     let mut window_builder = video_subsystem.window("Block Wars", WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -68,6 +87,9 @@ pub fn main() {
 
     // Scene
     let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr));
+
+    // Sound
+    let mut sound_events = Vec::new();
 
     'running: loop {
         // Network
@@ -111,9 +133,32 @@ pub fn main() {
         // Update
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            scene = scene.update(&mut socket);
+            scene = scene.update(&mut socket, &mut sound_events);
             previous_instant += tick_duration;
             ups += 1;
+
+            // Handle any sounds due to update
+            for event in sound_events.iter() {
+                match event {
+                    GameSoundEvent::LinesCleared(count) => match count {
+                        1 => {
+                            Channel::all().play(&smoke_1, 0).unwrap();
+                        }
+                        2 => {
+                            Channel::all().play(&smoke_2, 0).unwrap();
+                        }
+                        3 => {
+                            Channel::all().play(&smoke_3, 0).unwrap();
+                        }
+                        4 => {
+                            Channel::all().play(&smoke_4, 0).unwrap();
+                        }
+                        _ => unreachable!("tried to clear illegal number of lines"),
+                    },
+                }
+            }
+
+            sound_events.clear();
         }
 
         if scene.should_quit() {
