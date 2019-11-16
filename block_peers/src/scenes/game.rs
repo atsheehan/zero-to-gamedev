@@ -148,10 +148,7 @@ impl Scene for GameScene {
         message: ServerMessage,
     ) -> Box<dyn Scene> {
         match message {
-            ServerMessage::Sync {
-                player_id: _,
-                grids,
-            } => {
+            ServerMessage::Sync { grids, .. } => {
                 self.grids = grids.into_owned();
                 self
             }

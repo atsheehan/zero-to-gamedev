@@ -266,11 +266,11 @@ impl Grid {
     }
 
     fn move_bricks_down(&mut self, line: i32) {
-        for row in (0..line).into_iter().rev() {
+        for row in (0..line).rev() {
             for col in 0..self.width {
                 let cell = GridCell {
                     col: col as i32,
-                    row: row,
+                    row,
                 };
                 let new_cell = cell + GridCell { col: 0, row: 1 };
 
