@@ -9,13 +9,10 @@ extern crate simplelog;
 use getopts::Options;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::mixer::{self, Channel, Chunk};
 
 // Std
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::path::Path;
-use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 // Internal
@@ -24,7 +21,7 @@ use block_peers::net::{ServerMessage, Socket};
 use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use block_peers::scene::{AppLifecycleEvent, GameSoundEvent, Scene};
 use block_peers::scenes::TitleScene;
-use block_peers::sound::SOUND_IS_ENABLED;
+use block_peers::sound::{AudioManager, SoundEffect};
 
 // Constants
 const WINDOW_WIDTH: u32 = VIEWPORT_WIDTH;
@@ -46,24 +43,6 @@ pub fn main() {
     let _audio = sdl_context.audio().unwrap();
     let _image = sdl2::image::init(sdl2::image::InitFlag::PNG).unwrap();
     let ttf = sdl2::ttf::init().unwrap();
-
-    // Audio
-    mixer::open_audio(44_100, mixer::AUDIO_S16LSB, mixer::DEFAULT_CHANNELS, 1_024).unwrap();
-    mixer::allocate_channels(4);
-
-    let background_music =
-        sdl2::mixer::Music::from_file(Path::new("../../assets/background.wav")).unwrap();
-    let smoke_1 = Chunk::from_file(Path::new("../../assets/smoke-1.wav")).unwrap();
-    let smoke_2 = Chunk::from_file(Path::new("../../assets/smoke-2.wav")).unwrap();
-    let smoke_3 = Chunk::from_file(Path::new("../../assets/smoke-3.wav")).unwrap();
-    let smoke_4 = Chunk::from_file(Path::new("../../assets/smoke-4.wav")).unwrap();
-
-    // Volume is between 0-128. 32 will play at quarter volume for chiller background music
-    let mut is_paused = false;
-    sdl2::mixer::Music::set_volume(32);
-    background_music
-        .play(std::i32::MAX) // effectively infinitely play in background
-        .expect("unable to play background music");
 
     // Draw
     let mut window_builder = video_subsystem.window("Block Wars", WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -94,8 +73,11 @@ pub fn main() {
     // Scene
     let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr));
 
-    // Sound
+    // Audio
+    let mut audio_manager = AudioManager::new();
     let mut sound_events = Vec::new();
+    audio_manager.set_volume(0.20);
+    audio_manager.play_bg_music();
 
     'running: loop {
         // Network
@@ -148,38 +130,17 @@ pub fn main() {
         for event in sound_events.iter() {
             match event {
                 GameSoundEvent::LinesCleared(count) => match count {
-                    1 => {
-                        if SOUND_IS_ENABLED.load(Ordering::Relaxed) {
-                            Channel::all().play(&smoke_1, 0).unwrap();
-                        }
-                    }
-                    2 => {
-                        if SOUND_IS_ENABLED.load(Ordering::Relaxed) {
-                            Channel::all().play(&smoke_2, 0).unwrap();
-                        }
-                    }
-                    3 => {
-                        if SOUND_IS_ENABLED.load(Ordering::Relaxed) {
-                            Channel::all().play(&smoke_3, 0).unwrap();
-                        }
-                    }
-                    4 => {
-                        if SOUND_IS_ENABLED.load(Ordering::Relaxed) {
-                            Channel::all().play(&smoke_4, 0).unwrap();
-                        }
-                    }
+                    1 => audio_manager.play_sfx(SoundEffect::SmokeOne),
+                    2 => audio_manager.play_sfx(SoundEffect::SmokeTwo),
+                    3 => audio_manager.play_sfx(SoundEffect::SmokeThree),
+                    4 => audio_manager.play_sfx(SoundEffect::SmokeFour),
                     _ => unreachable!("tried to clear illegal number of lines"),
                 },
                 GameSoundEvent::TurnSoundsOff => {
-                    is_paused = true;
-                    sdl2::mixer::Music::halt();
+                    audio_manager.ui_turn_sound_off();
                 }
                 GameSoundEvent::TurnSoundsOn => {
-                    if is_paused {
-                        background_music
-                            .play(std::i32::MAX) // effectively infinitely play in background
-                            .expect("unable to play background music");
-                    }
+                    audio_manager.ui_turn_sound_on();
                 }
             }
         }
