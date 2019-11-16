@@ -340,6 +340,7 @@ impl Grid {
                 .left_top_xy(10, 10)
                 .build(),
         );
+        renderer.set_offset(x, y);
     }
 
     fn render_outline(&self, renderer: &mut Renderer) {
