@@ -16,6 +16,7 @@ pub enum GameSoundEvent {
     LinesCleared(u8),
     TurnSoundsOff,
     TurnSoundsOn,
+    MovePieceDown,
 }
 
 pub trait Scene {

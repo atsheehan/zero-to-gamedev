@@ -17,6 +17,7 @@ pub enum SoundEffect {
     SmokeTwo,
     SmokeThree,
     SmokeFour,
+    Whoosh,
 }
 
 pub struct AudioManager<'music> {
@@ -37,6 +38,7 @@ impl<'music> AudioManager<'music> {
         let smoke_2 = Chunk::from_file(Path::new("../../assets/smoke-2.wav")).unwrap();
         let smoke_3 = Chunk::from_file(Path::new("../../assets/smoke-3.wav")).unwrap();
         let smoke_4 = Chunk::from_file(Path::new("../../assets/smoke-4.wav")).unwrap();
+        let whoosh = Chunk::from_file(Path::new("../../assets/whoosh.wav")).unwrap();
 
         let mut chunks = HashMap::new();
 
@@ -44,6 +46,7 @@ impl<'music> AudioManager<'music> {
         chunks.insert(SoundEffect::SmokeTwo, smoke_2);
         chunks.insert(SoundEffect::SmokeThree, smoke_3);
         chunks.insert(SoundEffect::SmokeFour, smoke_4);
+        chunks.insert(SoundEffect::Whoosh, whoosh);
 
         Self { chunks, bg_music }
     }

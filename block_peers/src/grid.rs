@@ -98,6 +98,8 @@ impl Grid {
     }
 
     pub fn move_piece_to_bottom(&mut self) {
+        self.sound_events.push(GameSoundEvent::MovePieceDown);
+
         let mut hard_drop_count = 0;
         while !self.move_piece_down() {
             hard_drop_count += 1;

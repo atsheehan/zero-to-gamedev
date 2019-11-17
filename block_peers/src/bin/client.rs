@@ -136,6 +136,9 @@ pub fn main() {
                     4 => audio_manager.play_sfx(SoundEffect::SmokeFour),
                     _ => unreachable!("tried to clear illegal number of lines"),
                 },
+                GameSoundEvent::MovePieceDown => {
+                    audio_manager.play_sfx(SoundEffect::Whoosh);
+                }
                 GameSoundEvent::TurnSoundsOff => {
                     audio_manager.ui_turn_sound_off();
                 }
