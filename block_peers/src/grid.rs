@@ -148,10 +148,10 @@ impl Grid {
 
             self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
             self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
-        });
 
-        renderer.with_relative_offset(0, section_margin * 2, |renderer| {
-            self.render_score(renderer);
+            renderer.with_relative_offset(0, section_margin, |renderer| {
+                self.render_score(renderer);
+            });
         });
     }
 }
