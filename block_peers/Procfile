@@ -1,2 +1,2 @@
 server: cargo run --bin server
-client: cargo run --bin client
+client: cargo run --bin client --no-sound
