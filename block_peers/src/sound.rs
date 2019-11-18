@@ -100,4 +100,9 @@ impl<'music> AudioManager<'music> {
             self.play_bg_music();
         }
     }
+
+    // Used to disable sound in development.
+    pub fn dev_turn_sound_off(&self) {
+        SOUND_IS_ENABLED.store(false, Ordering::Relaxed);
+    }
 }

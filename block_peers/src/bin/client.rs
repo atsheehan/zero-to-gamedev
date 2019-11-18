@@ -76,6 +76,9 @@ pub fn main() {
     // Audio
     let mut audio_manager = AudioManager::new();
     let mut sound_events = Vec::new();
+    if options.no_sound {
+        audio_manager.dev_turn_sound_off();
+    }
     audio_manager.set_volume(0.20);
     audio_manager.play_bg_music();
 
@@ -177,6 +180,7 @@ struct ClientOptions {
     port: u16,
     host: IpAddr,
     fullscreen: bool,
+    no_sound: bool,
 }
 
 fn get_options() -> ClientOptions {
@@ -196,6 +200,7 @@ fn get_options() -> ClientOptions {
         "HOST",
     );
     opts.optflag("f", "fullscreen", "open the game in a fullscreen window");
+    opts.optflag("s", "no-sound", "open the game without sound");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -215,10 +220,12 @@ fn get_options() -> ClientOptions {
     };
 
     let fullscreen: bool = matches.opt_present("fullscreen");
+    let no_sound: bool = matches.opt_present("no-sound");
 
     ClientOptions {
         host,
         port,
         fullscreen,
+        no_sound,
     }
 }
