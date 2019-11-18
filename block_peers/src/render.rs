@@ -154,13 +154,19 @@ impl<'ttf> Renderer<'ttf> {
         }
     }
 
-    pub fn set_offset(&mut self, x_offset: i32, y_offset: i32) {
-        self.x_offset = x_offset;
-        self.y_offset = y_offset;
-    }
+    pub fn with_relative_offset<F>(&mut self, x_offset: i32, y_offset: i32, mut render_fn: F)
+    where
+        F: FnMut(&mut Renderer<'ttf>),
+    {
+        let original_x_offset = self.x_offset;
+        let original_y_offset = self.y_offset;
+        self.x_offset += x_offset;
+        self.y_offset += y_offset;
 
-    pub fn get_offset(&self) -> (i32, i32) {
-        (self.x_offset, self.y_offset)
+        render_fn(self);
+
+        self.x_offset = original_x_offset;
+        self.y_offset = original_y_offset;
     }
 
     pub fn clear(&mut self) {
