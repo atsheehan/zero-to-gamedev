@@ -91,6 +91,7 @@ pub enum BrickType {
     Purple,
     Teal,
     Smoke(u16),
+    Attacked,
 }
 
 /// Brick is used to represent the content in an (x, y) position on the
@@ -128,6 +129,13 @@ impl Brick {
     pub fn is_empty(self) -> bool {
         match self {
             Brick::Empty => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_attacked(self) -> bool {
+        match self {
+            Brick::Occupied(BrickType::Attacked) => true,
             _ => false,
         }
     }
