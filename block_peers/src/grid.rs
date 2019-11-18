@@ -125,37 +125,34 @@ impl Grid {
 
     pub fn render(&self, renderer: &mut Renderer) {
         let section_margin = 8;
-        let (x, y) = renderer.get_offset();
-
         self.render_staged_piece(renderer);
 
-        let (new_x, new_y) = (x, y + section_margin);
-        renderer.set_offset(new_x, new_y);
+        renderer.with_relative_offset(0, section_margin, |renderer| {
+            self.render_outline(renderer);
 
-        self.render_outline(renderer);
-
-        // Render occupied cells on the board
-        for cell in self.grid_iterator() {
-            let idx = self.cell_index(cell);
-            match self.cells[idx] {
-                Brick::Occupied(brick_type) => {
-                    let image = Image::from_brick_type(brick_type);
-                    renderer.render_image(image, cell, Opacity::Opaque);
+            // Render occupied cells on the board
+            for cell in self.grid_iterator() {
+                let idx = self.cell_index(cell);
+                match self.cells[idx] {
+                    Brick::Occupied(brick_type) => {
+                        let image = Image::from_brick_type(brick_type);
+                        renderer.render_image(image, cell, Opacity::Opaque);
+                    }
+                    Brick::Breaking(frame) => {
+                        let image = Image::from_brick_type(BrickType::Smoke(frame));
+                        renderer.render_image(image, cell, Opacity::Opaque);
+                    }
+                    _ => {}
                 }
-                Brick::Breaking(frame) => {
-                    let image = Image::from_brick_type(BrickType::Smoke(frame));
-                    renderer.render_image(image, cell, Opacity::Opaque);
-                }
-                _ => {}
             }
-        }
 
-        self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
-        self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
-        renderer.set_offset(new_x, new_y + section_margin);
-        self.render_score(renderer);
+            self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
+            self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
+        });
 
-        renderer.set_offset(x, y);
+        renderer.with_relative_offset(0, section_margin * 2, |renderer| {
+            self.render_score(renderer);
+        });
     }
 }
 
@@ -339,54 +336,49 @@ impl Grid {
         let border_width = 2;
         let border_color = Color::RGB(95, 124, 202);
         let bg_color = Color::RGB(44, 44, 44);
-        let (x, y) = renderer.get_offset();
-
-        let (new_x, new_y) = (x, y - (CELL_SIZE * 5) as i32);
-        renderer.set_offset(new_x, new_y);
 
         let bg_width = self.width * CELL_SIZE;
         let box_height = 5 * CELL_SIZE;
-        renderer.fill_rect(Rect::new(0, 0, bg_width, box_height), bg_color);
 
-        renderer.fill_rect(Rect::new(0, 0, bg_width, 1 * CELL_SIZE), border_color);
-        renderer.fill_rect(Rect::new(0, 0, border_width, box_height), border_color);
+        renderer.with_relative_offset(0, -(CELL_SIZE as i32 * 5), |renderer| {
+            renderer.fill_rect(Rect::new(0, 0, bg_width, box_height), bg_color);
+            renderer.fill_rect(Rect::new(0, 0, bg_width, 1 * CELL_SIZE), border_color);
+            renderer.fill_rect(Rect::new(0, 0, border_width, box_height), border_color);
 
-        renderer.set_offset(new_x + (bg_width - border_width) as i32, new_y);
-        renderer.fill_rect(Rect::new(0, 0, border_width, box_height), border_color);
+            renderer.render_text(
+                Text::new("Next Block")
+                    .height(20)
+                    .center_xy((bg_width / 2) as i32, 10)
+                    .build(),
+            );
 
-        renderer.set_offset(new_x, new_y + (box_height - border_width) as i32);
-        renderer.fill_rect(Rect::new(0, 0, bg_width, border_width), border_color);
+            renderer.with_relative_offset((bg_width - border_width) as i32, 0, |renderer| {
+                renderer.fill_rect(Rect::new(0, 0, border_width, box_height), border_color);
+            });
 
-        renderer.set_offset(new_x, new_y);
-        renderer.render_text(
-            Text::new("Next Block")
-                .height(20)
-                .center_xy((bg_width / 2) as i32, 10)
-                .build(),
-        );
+            renderer.with_relative_offset(0, (box_height - border_width) as i32, |renderer| {
+                renderer.fill_rect(Rect::new(0, 0, bg_width, border_width), border_color);
+            });
 
-        self.render_piece(renderer, &self.staged_piece.move_down(), Opacity::Opaque);
-        renderer.set_offset(x, y);
+            self.render_piece(renderer, &self.staged_piece.move_down(), Opacity::Opaque);
+        });
     }
 
     fn render_score(&self, renderer: &mut Renderer) {
         let bg_color = Color::RGB(95, 124, 202);
-        let (x, y) = renderer.get_offset();
 
-        let (new_x, new_y) = (x, y + (CELL_SIZE * self.height) as i32);
-        renderer.set_offset(new_x, new_y);
+        renderer.with_relative_offset(0, (CELL_SIZE * self.height) as i32, |renderer| {
+            let bg_width = CELL_SIZE * self.width;
+            renderer.fill_rect(Rect::new(0, 0, bg_width, CELL_SIZE * 2), bg_color);
 
-        let bg_width = CELL_SIZE * self.width;
-        renderer.fill_rect(Rect::new(0, 0, bg_width, CELL_SIZE * 2), bg_color);
-
-        let score_text = format!("Score: {}", self.score);
-        renderer.render_text(
-            Text::from(score_text)
-                .height(20)
-                .left_top_xy(10, 10)
-                .build(),
-        );
-        renderer.set_offset(x, y);
+            let score_text = format!("Score: {}", self.score);
+            renderer.render_text(
+                Text::from(score_text)
+                    .height(20)
+                    .left_top_xy(10, 10)
+                    .build(),
+            );
+        });
     }
 
     fn render_outline(&self, renderer: &mut Renderer) {

@@ -136,17 +136,17 @@ impl Scene for TitleScene {
             };
 
             // Drop shadow
-            renderer.set_offset(-1, 2);
-            renderer.render_text(
-                Text::new(item.text())
-                    .center_xy(400, y as i32)
-                    .height(40)
-                    .color(bg_color)
-                    .build(),
-            );
+            renderer.with_relative_offset(-1, 2, |renderer| {
+                renderer.render_text(
+                    Text::new(item.text())
+                        .center_xy(400, y as i32)
+                        .height(40)
+                        .color(bg_color)
+                        .build(),
+                )
+            });
 
             // Primary text
-            renderer.set_offset(0, 0);
             renderer.render_text(
                 Text::new(item.text())
                     .center_xy(400, y as i32)

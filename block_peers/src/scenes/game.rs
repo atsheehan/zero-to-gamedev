@@ -128,9 +128,7 @@ impl Scene for GameScene {
         for (idx, grid) in self.grids.iter().enumerate() {
             let (x_offset, y_offset) =
                 grid_offset(grid.size(), idx as u32, self.grids.len() as u32);
-            renderer.set_offset(x_offset, y_offset);
-            grid.render(renderer);
-            renderer.set_offset(0, 0);
+            renderer.with_relative_offset(x_offset, y_offset, |renderer| grid.render(renderer));
         }
     }
 
