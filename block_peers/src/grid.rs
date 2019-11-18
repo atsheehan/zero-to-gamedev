@@ -304,43 +304,37 @@ impl Grid {
 
     fn render_staged_piece(&self, renderer: &mut Renderer) {
         let bg_color = Color::RGB(44, 44, 44);
-        let (x, y) = renderer.get_offset();
 
-        let (new_x, new_y) = (x, y - (CELL_SIZE * 5) as i32);
-        renderer.set_offset(new_x, new_y);
+        renderer.with_relative_offset(0, -(CELL_SIZE as i32 * 5), |renderer| {
+            let bg_width = self.width * CELL_SIZE;
+            renderer.fill_rect(Rect::new(0, 0, bg_width, 5 * CELL_SIZE), bg_color);
 
-        let bg_width = self.width * CELL_SIZE;
-        renderer.fill_rect(Rect::new(0, 0, bg_width, 5 * CELL_SIZE), bg_color);
+            renderer.render_text(
+                Text::new("Next Block")
+                    .height(20)
+                    .center_xy((bg_width / 2) as i32, 10)
+                    .build(),
+            );
 
-        renderer.render_text(
-            Text::new("Next Block")
-                .height(20)
-                .center_xy((bg_width / 2) as i32, 10)
-                .build(),
-        );
-
-        self.render_piece(renderer, &self.staged_piece.move_down(), Opacity::Opaque);
-        renderer.set_offset(x, y);
+            self.render_piece(renderer, &self.staged_piece.move_down(), Opacity::Opaque);
+        });
     }
 
     fn render_score(&self, renderer: &mut Renderer) {
         let bg_color = Color::RGB(44, 44, 44);
-        let (x, y) = renderer.get_offset();
 
-        let (new_x, new_y) = (x, y + (CELL_SIZE * self.height) as i32);
-        renderer.set_offset(new_x, new_y);
+        renderer.with_relative_offset(0, (CELL_SIZE * self.height) as i32, |renderer| {
+            let bg_width = CELL_SIZE * self.width;
+            renderer.fill_rect(Rect::new(0, 0, bg_width, CELL_SIZE * 2), bg_color);
 
-        let bg_width = CELL_SIZE * self.width;
-        renderer.fill_rect(Rect::new(0, 0, bg_width, CELL_SIZE * 2), bg_color);
-
-        let score_text = format!("Score: {}", self.score);
-        renderer.render_text(
-            Text::from(score_text)
-                .height(20)
-                .left_top_xy(10, 10)
-                .build(),
-        );
-        renderer.set_offset(x, y);
+            let score_text = format!("Score: {}", self.score);
+            renderer.render_text(
+                Text::from(score_text)
+                    .height(20)
+                    .left_top_xy(10, 10)
+                    .build(),
+            );
+        });
     }
 
     fn render_outline(&self, renderer: &mut Renderer) {
