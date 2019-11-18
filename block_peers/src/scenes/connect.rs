@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
-use crate::scene::Scene;
+use crate::scene::{GameSoundEvent, Scene};
 use crate::scenes::GameScene;
 use crate::text::Text;
 
@@ -87,7 +87,11 @@ impl Scene for ConnectScene {
         renderer.render_text(Text::new(message).center_xy(400, 300).height(40).build());
     }
 
-    fn update(mut self: Box<Self>, socket: &mut Socket) -> Box<dyn Scene> {
+    fn update(
+        mut self: Box<Self>,
+        socket: &mut Socket,
+        _sounds: &mut Vec<GameSoundEvent>,
+    ) -> Box<dyn Scene> {
         if self.connection_attempt_counter >= MAX_CONNECTION_ATTEMPTS {
             self.state = ConnectionState::TimedOut;
             return self;

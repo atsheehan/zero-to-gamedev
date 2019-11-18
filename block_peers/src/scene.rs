@@ -1,4 +1,5 @@
 use sdl2::event::Event;
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
 use crate::net::{ServerMessage, Socket};
@@ -8,6 +9,14 @@ pub enum AppLifecycleEvent {
     /// Either the user has requested to quit or some OS event has happened which wants the app to
     /// shutdown.
     Shutdown,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+pub enum GameSoundEvent {
+    LinesCleared(u8),
+    TurnSoundsOff,
+    TurnSoundsOn,
+    MovePieceDown,
 }
 
 pub trait Scene {
@@ -20,7 +29,11 @@ pub trait Scene {
         source_addr: SocketAddr,
         message: ServerMessage,
     ) -> Box<dyn Scene>;
-    fn update(self: Box<Self>, socket: &mut Socket) -> Box<dyn Scene>;
+    fn update(
+        self: Box<Self>,
+        socket: &mut Socket,
+        sounds: &mut Vec<GameSoundEvent>,
+    ) -> Box<dyn Scene>;
     fn should_quit(&self) -> bool {
         false
     }

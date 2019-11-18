@@ -9,6 +9,8 @@ extern crate simplelog;
 use getopts::Options;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+
+// Std
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
@@ -17,8 +19,9 @@ use std::time::{Duration, Instant};
 use block_peers::logging;
 use block_peers::net::{ServerMessage, Socket};
 use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
-use block_peers::scene::{AppLifecycleEvent, Scene};
+use block_peers::scene::{AppLifecycleEvent, GameSoundEvent, Scene};
 use block_peers::scenes::TitleScene;
+use block_peers::sound::{AudioManager, SoundEffect};
 
 // Constants
 const WINDOW_WIDTH: u32 = VIEWPORT_WIDTH;
@@ -37,6 +40,7 @@ pub fn main() {
     // Note: handles must stay in scope until end of program due to dropping.
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
+    let _audio = sdl_context.audio().unwrap();
     let _image = sdl2::image::init(sdl2::image::InitFlag::PNG).unwrap();
     let ttf = sdl2::ttf::init().unwrap();
 
@@ -68,6 +72,12 @@ pub fn main() {
 
     // Scene
     let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr));
+
+    // Audio
+    let mut audio_manager = AudioManager::new();
+    let mut sound_events = Vec::new();
+    audio_manager.set_volume(0.20);
+    audio_manager.play_bg_music();
 
     'running: loop {
         // Network
@@ -111,10 +121,34 @@ pub fn main() {
         // Update
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            scene = scene.update(&mut socket);
+            scene = scene.update(&mut socket, &mut sound_events);
             previous_instant += tick_duration;
             ups += 1;
         }
+
+        // Handle any sounds due to update
+        for event in sound_events.iter() {
+            match event {
+                GameSoundEvent::LinesCleared(count) => match count {
+                    1 => audio_manager.play_sfx(SoundEffect::SmokeOne),
+                    2 => audio_manager.play_sfx(SoundEffect::SmokeTwo),
+                    3 => audio_manager.play_sfx(SoundEffect::SmokeThree),
+                    4 => audio_manager.play_sfx(SoundEffect::SmokeFour),
+                    _ => unreachable!("tried to clear illegal number of lines"),
+                },
+                GameSoundEvent::MovePieceDown => {
+                    audio_manager.play_sfx(SoundEffect::Whoosh);
+                }
+                GameSoundEvent::TurnSoundsOff => {
+                    audio_manager.ui_turn_sound_off();
+                }
+                GameSoundEvent::TurnSoundsOn => {
+                    audio_manager.ui_turn_sound_on();
+                }
+            }
+        }
+
+        sound_events.clear();
 
         if scene.should_quit() {
             break 'running;

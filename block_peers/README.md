@@ -25,7 +25,7 @@ Additionally, you may need to install the `sdl2` libraries to compile the binari
 For macOS, the libraries are available via homebrew:
 
 ```sh
-$ brew install sdl2 sdl2_ttf sdl2_image
+$ brew install sdl2 sdl2_ttf sdl2_image sdl2_mixer
 ```
 
 ## Iteration 1 - Basic Mechanics

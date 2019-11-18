@@ -8,6 +8,7 @@ use crate::brick::{
 };
 use crate::piece::{random_next_piece, Piece};
 use crate::render::{Image, Opacity, Renderer};
+use crate::scene::GameSoundEvent;
 use crate::text::Text;
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
@@ -21,13 +22,14 @@ pub enum GridInputEvent {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Grid {
+    pub gameover: bool,
+    pub sound_events: Vec<GameSoundEvent>,
     height: u32,
     width: u32,
     cells: Vec<Brick>,
     staged_piece: Piece,
     current_piece: Piece,
     drop_counter: u32,
-    pub gameover: bool,
     score: u32,
     hard_drop_count: u32,
 }
@@ -43,13 +45,14 @@ impl Grid {
         let staged_piece = random_next_piece().center(width);
 
         Self {
+            gameover: false,
+            sound_events: Vec::new(),
             height,
             width,
             cells,
             current_piece,
             staged_piece,
             drop_counter: 0,
-            gameover: false,
             score: 0,
             hard_drop_count: 0,
         }
@@ -95,6 +98,8 @@ impl Grid {
     }
 
     pub fn move_piece_to_bottom(&mut self) {
+        self.sound_events.push(GameSoundEvent::MovePieceDown);
+
         let mut hard_drop_count = 0;
         while !self.move_piece_down() {
             hard_drop_count += 1;
@@ -265,6 +270,11 @@ impl Grid {
             }
         }
         self.add_score(number_lines_cleared);
+
+        if number_lines_cleared > 0 {
+            self.sound_events
+                .push(GameSoundEvent::LinesCleared(number_lines_cleared as u8));
+        }
     }
 
     fn add_score(&mut self, number_lines_cleared: u32) {

@@ -14,7 +14,7 @@ use crate::grid::Grid;
 use crate::net::{ServerMessage, Socket};
 use crate::piece::Piece;
 use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
-use crate::scene::Scene;
+use crate::scene::{GameSoundEvent, Scene};
 use crate::scenes::ConnectScene;
 use crate::sound::SOUND_IS_ENABLED;
 use crate::text::Text;
@@ -26,6 +26,8 @@ pub struct TitleScene {
     ai: DumbAI,
     state: MenuState,
     should_quit: bool,
+    should_stop_sounds: bool,
+    should_start_sounds: bool,
 }
 
 impl TitleScene {
@@ -47,6 +49,8 @@ impl TitleScene {
             ai: DumbAI::new(background_grid),
             state: MenuState::StartGame,
             should_quit: false,
+            should_stop_sounds: false,
+            should_start_sounds: false,
         }
     }
 }
@@ -62,8 +66,10 @@ impl Scene for TitleScene {
                 MenuState::ToggleSound => {
                     if SOUND_IS_ENABLED.load(Ordering::Relaxed) {
                         SOUND_IS_ENABLED.store(false, Ordering::Relaxed);
+                        self.should_stop_sounds = true;
                     } else {
                         SOUND_IS_ENABLED.store(true, Ordering::Relaxed);
+                        self.should_start_sounds = true;
                     }
 
                     self
@@ -191,8 +197,21 @@ impl Scene for TitleScene {
         self
     }
 
-    fn update(mut self: Box<Self>, _socket: &mut Socket) -> Box<dyn Scene> {
+    fn update(
+        mut self: Box<Self>,
+        _socket: &mut Socket,
+        sounds: &mut Vec<GameSoundEvent>,
+    ) -> Box<dyn Scene> {
         self.ai.update();
+
+        if self.should_stop_sounds {
+            sounds.push(GameSoundEvent::TurnSoundsOff);
+            self.should_stop_sounds = false;
+        } else if self.should_start_sounds {
+            sounds.push(GameSoundEvent::TurnSoundsOn);
+            self.should_start_sounds = false;
+        }
+
         self
     }
 
