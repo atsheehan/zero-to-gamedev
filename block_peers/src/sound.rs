@@ -79,7 +79,7 @@ impl<'music> AudioManager<'music> {
     /// Volume to play background music at. Value can be between 0 and 1, 1 being the maximum
     /// available volume and 0 being off.
     pub fn set_volume(&self, percent: f32) {
-        if percent > 0.0 && percent < 1.0 {
+        if percent >= 0.0 && percent <= 1.0 {
             let amount = (percent * 128.0) as i32;
             sdl2::mixer::Music::set_volume(amount);
         } else {
