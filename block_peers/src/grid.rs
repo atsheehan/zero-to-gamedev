@@ -124,6 +124,46 @@ impl Grid {
     }
 
     pub fn render(&self, renderer: &mut Renderer) {
+        let section_margin = 8;
+        self.render_staged_piece(renderer);
+
+        renderer.with_relative_offset(0, section_margin, |renderer| {
+            self.render_outline(renderer);
+
+            // Render occupied cells on the board
+            for cell in self.grid_iterator() {
+                let idx = self.cell_index(cell);
+                match self.cells[idx] {
+                    Brick::Occupied(brick_type) => {
+                        let image = Image::from_brick_type(brick_type);
+                        renderer.render_image(image, cell, Opacity::Opaque);
+                    }
+                    Brick::Breaking(frame) => {
+                        let image = Image::from_brick_type(BrickType::Smoke(frame));
+                        renderer.render_image(image, cell, Opacity::Opaque);
+                    }
+                    _ => {}
+                }
+            }
+
+            self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
+            self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
+
+            renderer.with_relative_offset(0, section_margin, |renderer| {
+                self.render_score(renderer);
+            });
+        });
+    }
+}
+
+// ------------
+// Title Screen
+// ------------
+//
+// These methods are only for convenience in creating the menu title screen animation.
+// Avoid using them in the 'real' game.
+impl Grid {
+    pub fn render_for_title(&self, renderer: &mut Renderer) {
         self.render_outline(renderer);
 
         // Render occupied cells on the board
@@ -142,20 +182,10 @@ impl Grid {
             }
         }
 
-        self.render_staged_piece(renderer);
         self.render_piece(renderer, &self.current_piece, Opacity::Opaque);
         self.render_piece(renderer, &self.ghost_piece(), Opacity::Translucent(128));
-        self.render_score(renderer);
     }
-}
 
-// ------------
-// Title Screen
-// ------------
-//
-// These methods are only for convenience in creating the menu title screen animation.
-// Avoid using them in the 'real' game.
-impl Grid {
     pub fn place_piece_at_bottom(&mut self, piece: Piece) {
         let mut piece = piece;
         let mut next = piece.move_down();
@@ -303,11 +333,17 @@ impl Grid {
     }
 
     fn render_staged_piece(&self, renderer: &mut Renderer) {
+        let border_width = 2;
+        let border_color = Color::RGB(95, 124, 202);
         let bg_color = Color::RGB(44, 44, 44);
 
+        let bg_width = self.width * CELL_SIZE;
+        let box_height = 5 * CELL_SIZE;
+
         renderer.with_relative_offset(0, -(CELL_SIZE as i32 * 5), |renderer| {
-            let bg_width = self.width * CELL_SIZE;
-            renderer.fill_rect(Rect::new(0, 0, bg_width, 5 * CELL_SIZE), bg_color);
+            renderer.fill_rect(Rect::new(0, 0, bg_width, box_height), bg_color);
+            renderer.fill_rect(Rect::new(0, 0, bg_width, 1 * CELL_SIZE), border_color);
+            renderer.fill_rect(Rect::new(0, 0, border_width, box_height), border_color);
 
             renderer.render_text(
                 Text::new("Next Block")
@@ -316,12 +352,20 @@ impl Grid {
                     .build(),
             );
 
+            renderer.with_relative_offset((bg_width - border_width) as i32, 0, |renderer| {
+                renderer.fill_rect(Rect::new(0, 0, border_width, box_height), border_color);
+            });
+
+            renderer.with_relative_offset(0, (box_height - border_width) as i32, |renderer| {
+                renderer.fill_rect(Rect::new(0, 0, bg_width, border_width), border_color);
+            });
+
             self.render_piece(renderer, &self.staged_piece.move_down(), Opacity::Opaque);
         });
     }
 
     fn render_score(&self, renderer: &mut Renderer) {
-        let bg_color = Color::RGB(44, 44, 44);
+        let bg_color = Color::RGB(95, 124, 202);
 
         renderer.with_relative_offset(0, (CELL_SIZE * self.height) as i32, |renderer| {
             let bg_width = CELL_SIZE * self.width;
@@ -346,6 +390,7 @@ impl Grid {
             bg_color,
         );
 
+        // Background lines for graph
         for i in 0..self.width {
             let x = i * CELL_SIZE;
 
@@ -354,7 +399,6 @@ impl Grid {
                 stripe_color,
             );
         }
-
         for i in 0..self.height {
             let y = i * CELL_SIZE;
 
@@ -363,5 +407,34 @@ impl Grid {
                 stripe_color,
             );
         }
+
+        // Gradient cross hairs
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let xx = x * CELL_SIZE;
+                let yy = y * CELL_SIZE;
+
+                let start_color = (56.0, 56.0, 56.0);
+                let end_color = (131.0, 161.0, 194.0);
+
+                let t =
+                    (y as f64 * CELL_SIZE as f64) / (self.height as f64 * CELL_SIZE as f64) - 0.2; // dampen a bit
+                let interp = lerp(start_color, end_color, t as f64);
+                let color = Color::RGB(interp.0 as u8, interp.1 as u8, interp.2 as u8);
+
+                if xx > 0 && yy > 0 {
+                    renderer.fill_rect(Rect::new((xx - 2) as i32, yy as i32, 5, 1), color);
+                    renderer.fill_rect(Rect::new(xx as i32, (yy - 2) as i32, 1, 5), color);
+                }
+            }
+        }
     }
+}
+
+fn lerp(start: (f64, f64, f64), end: (f64, f64, f64), time: f64) -> (f64, f64, f64) {
+    (
+        start.0 * (1f64 - time) + end.0 * time,
+        start.1 * (1f64 - time) + end.1 * time,
+        start.2 * (1f64 - time) + end.2 * time,
+    )
 }

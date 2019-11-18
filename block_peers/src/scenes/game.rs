@@ -4,6 +4,7 @@ use sdl2::rect::Rect;
 
 use std::net::SocketAddr;
 
+use crate::brick::CELL_SIZE;
 use crate::grid::{Grid, GridInputEvent};
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::{Image, Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
@@ -158,12 +159,17 @@ impl Scene for GameScene {
 fn grid_offset(grid_size: (u32, u32), index: u32, num_grids: u32) -> (i32, i32) {
     let (grid_width, grid_height) = grid_size;
 
+    // Add height offset for staged piece and score
+    let staged_height = 3 * CELL_SIZE;
+    // Add height for the margin between each grid section (8 * 2)
+    let section_margin = 16;
+
     // Slice up the viewport into equal sized chunks
     let chunk_width = VIEWPORT_WIDTH / num_grids;
 
     // Center the grid within the chunk
     (
         (index * chunk_width) as i32 + (chunk_width - grid_width) as i32 / 2,
-        (VIEWPORT_HEIGHT - grid_height) as i32 / 2,
+        (VIEWPORT_HEIGHT - (grid_height - staged_height + section_margin)) as i32 / 2,
     )
 }
