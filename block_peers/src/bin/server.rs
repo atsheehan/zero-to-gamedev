@@ -3,7 +3,7 @@ extern crate log;
 extern crate bincode;
 extern crate getopts;
 
-use block_peers::grid::{Grid, GridInputEvent};
+use block_peers::grid::{Grid, GridAttackEvent, GridInputEvent};
 use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerMessage, Socket};
 
@@ -76,8 +76,19 @@ fn main() {
                 // If there is an active game, update the grids each
                 // tick and sync the state to each client.
                 Some((ref client_addrs, ref mut grids)) => {
-                    for grid in grids.iter_mut() {
-                        grid.update();
+                    let mut attacks: Vec<(u32, GridAttackEvent)> = Vec::new();
+                    for (i, grid) in grids.iter_mut().enumerate() {
+                        if let Some(attack) = grid.update() {
+                            attacks.push((i as u32, attack));
+                        }
+                    }
+
+                    for (from_player_id, attack) in attacks.iter() {
+                        for (i, grid) in grids.iter_mut().enumerate() {
+                            if i != *from_player_id as usize {
+                                grid.attack(attack.clone());
+                            }
+                        }
                     }
 
                     for (player_id, addr) in client_addrs.iter().enumerate() {

@@ -20,6 +20,11 @@ pub enum GridInputEvent {
     Rotate,
 }
 
+#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
+pub enum GridAttackEvent {
+    LinesCleared(u8),
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Grid {
     pub gameover: bool,
@@ -32,6 +37,7 @@ pub struct Grid {
     drop_counter: u32,
     score: u32,
     hard_drop_count: u32,
+    pending_attack: Option<GridAttackEvent>,
 }
 
 // ------------
@@ -55,6 +61,7 @@ impl Grid {
             drop_counter: 0,
             score: 0,
             hard_drop_count: 0,
+            pending_attack: None,
         }
     }
 
@@ -107,7 +114,48 @@ impl Grid {
         self.hard_drop_count = hard_drop_count;
     }
 
-    pub fn update(&mut self) {
+    pub fn attack(&mut self, event: GridAttackEvent) {
+        match event {
+            GridAttackEvent::LinesCleared(num) => {
+                let matching_row: Option<i32> = self
+                    .lines_matching(|_, brick| brick.is_attacked())
+                    .flat_map(|line| line.cells)
+                    .map(|cell| cell.row)
+                    .min();
+                let mut rows_to_attack = Vec::new();
+                let row = match matching_row {
+                    Some(i) => i - 1,
+                    None => (self.height - 1) as i32,
+                };
+                if num >= 2 {
+                    rows_to_attack.push(row);
+                }
+                if num >= 3 {
+                    rows_to_attack.push(row - 1);
+                }
+                if num >= 4 {
+                    rows_to_attack.push(row - 2);
+                }
+
+                for val in rows_to_attack {
+                    self.mark_row_as_attacked(val as i32);
+                }
+            }
+        }
+    }
+
+    fn mark_row_as_attacked(&mut self, row: i32) {
+        for col in 0..self.width {
+            let cell = GridCell {
+                row,
+                col: col as i32,
+            };
+            let idx = self.cell_index(cell);
+            self.cells[idx] = Brick::Occupied(BrickType::Attacked);
+        }
+    }
+
+    pub fn update(&mut self) -> Option<GridAttackEvent> {
         // Handle continuous dropping
         self.drop_counter += 1;
         if self.drop_counter >= 100 {
@@ -126,6 +174,13 @@ impl Grid {
         for MatchingLine { row, .. } in self.lines_matching(|_, brick| brick.is_broken()) {
             self.move_bricks_down(row as i32);
         }
+
+        if let Some(attack) = self.pending_attack {
+            self.pending_attack = None;
+            return Some(attack);
+        }
+
+        None
     }
 
     pub fn render(&self, renderer: &mut Renderer) {
@@ -262,7 +317,9 @@ impl Grid {
 
     fn animate_full_lines(&mut self) {
         let mut number_lines_cleared = 0;
-        for MatchingLine { cells, .. } in self.lines_matching(|_, brick| !brick.is_empty()) {
+        for MatchingLine { cells, .. } in
+            self.lines_matching(|_, brick| !brick.is_empty() && !brick.is_attacked())
+        {
             number_lines_cleared += 1;
             for cell in cells {
                 let idx = self.cell_index(cell);
@@ -274,6 +331,10 @@ impl Grid {
         if number_lines_cleared > 0 {
             self.sound_events
                 .push(GameSoundEvent::LinesCleared(number_lines_cleared as u8));
+            if number_lines_cleared >= 1 {
+                self.pending_attack =
+                    Some(GridAttackEvent::LinesCleared(number_lines_cleared as u8));
+            }
         }
     }
 

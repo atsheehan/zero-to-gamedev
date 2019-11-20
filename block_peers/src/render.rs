@@ -73,6 +73,7 @@ impl Image {
             Purple => Image::PurpleBrick,
             Teal => Image::TealBrick,
             Smoke(frame) => Image::SmokeBrick(frame),
+            Attacked => Image::SmokeBrick(0),
         }
     }
 }
