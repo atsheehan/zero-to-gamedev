@@ -2,7 +2,6 @@ use sdl2::mixer::{self, Channel, Chunk, Music};
 
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
