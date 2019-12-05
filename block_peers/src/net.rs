@@ -1,7 +1,11 @@
+use rand::Rng;
+
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use std::borrow::Cow;
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
@@ -65,6 +69,83 @@ pub enum ServerMessage<'a> {
     },
 }
 
+pub enum ServerEvent {
+    ClientConnected(SocketAddr),
+    ClientDisconnected(SocketAddr),
+    GameEvent(SocketAddr, ClientMessage),
+}
+
+pub struct ServerSocket {
+    socket: Socket,
+    connections: HashMap<SocketAddr, Connection>,
+}
+
+impl ServerSocket {
+    pub fn bind<A: ToSocketAddrs>(addr: A) -> Result<Self> {
+        let socket = Socket::bind(addr)?;
+        let connections = HashMap::new();
+        Ok(Self {
+            socket,
+            connections,
+        })
+    }
+
+    pub fn receive(&mut self) -> Result<Option<ServerEvent>> {
+        match self.socket.receive::<ClientMessage>() {
+            Ok(Some((source_addr, ClientMessage::Connect))) => {
+                match self.connections.entry(source_addr) {
+                    Entry::Vacant(entry) => {
+                        let client = Connection::new(source_addr);
+                        let salt = client.salt;
+                        entry.insert(client);
+                        self.socket
+                            .send(source_addr, &ServerMessage::Challenge { salt })
+                            .unwrap();
+                    }
+                    Entry::Occupied(entry) => {
+                        self.socket
+                            .send(
+                                source_addr,
+                                &ServerMessage::Challenge {
+                                    salt: entry.get().salt,
+                                },
+                            )
+                            .unwrap();
+                    }
+                }
+                Ok(None)
+            }
+            Ok(Some((source_addr, ClientMessage::ChallengeResponse { salt }))) => {
+                match self.connections.entry(source_addr) {
+                    Entry::Vacant(_) => Ok(None),
+                    Entry::Occupied(mut entry) => {
+                        if entry.get().salt == salt {
+                            entry.get_mut().challenge_confirmed = true;
+                            self.socket
+                                .send(source_addr, &ServerMessage::ConnectionAccepted)
+                                .unwrap();
+                        }
+                        Ok(Some(ServerEvent::ClientConnected(source_addr)))
+                    }
+                }
+            }
+            Ok(Some((source_addr, ClientMessage::Disconnect))) => {
+                // TODO: check that they exist in the connections
+                Ok(Some(ServerEvent::ClientDisconnected(source_addr)))
+            }
+            Ok(Some((source_addr, client_message))) => {
+                Ok(Some(ServerEvent::GameEvent(source_addr, client_message)))
+            }
+            Ok(None) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn send<A: ToSocketAddrs>(&mut self, addr: A, message: &ServerMessage) -> Result<()> {
+        self.socket.send(addr, message)
+    }
+}
+
 // -------
 // Socket
 // -------
@@ -116,6 +197,26 @@ impl Socket {
         let bytes = gzip_encode(&packet.as_bytes());
         self.socket.send_to(&bytes, addr)?;
         Ok(())
+    }
+}
+
+struct Connection {
+    // TODO: reassess whether we need when introducing multiplayer
+    _address: SocketAddr,
+    challenge_confirmed: bool,
+    salt: u64,
+}
+
+impl Connection {
+    fn new(address: SocketAddr) -> Self {
+        let mut rng = rand::thread_rng();
+        let salt = rng.gen_range(0, std::u64::MAX);
+
+        Self {
+            _address: address,
+            salt,
+            challenge_confirmed: false,
+        }
     }
 }
 

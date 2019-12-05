@@ -5,13 +5,11 @@ extern crate getopts;
 
 use block_peers::grid::{Grid, GridAttackEvent, GridInputEvent};
 use block_peers::logging;
-use block_peers::net::{ClientMessage, ServerMessage, Socket};
+use block_peers::net::{ClientMessage, ServerEvent, ServerMessage, ServerSocket};
 
 use getopts::Options;
-use rand::Rng;
 use std::borrow::Cow;
-use std::collections::hash_map::Entry::{Occupied, Vacant};
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
@@ -26,32 +24,12 @@ const DEFAULT_PORT: u16 = 4485;
 const DEFAULT_HOST: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
 const DEFAULT_PLAYERS_PER_GAME: u32 = 1;
 
-struct Connection {
-    // TODO: reassess whether we need when introducing multiplayer
-    _address: SocketAddr,
-    challenge_confirmed: bool,
-    salt: u64,
-}
-
-impl Connection {
-    pub fn new(address: SocketAddr) -> Self {
-        let mut rng = rand::thread_rng();
-        let salt = rng.gen_range(0, std::u64::MAX);
-
-        Self {
-            _address: address,
-            salt,
-            challenge_confirmed: false,
-        }
-    }
-}
-
 fn main() {
     logging::init();
     let options = get_options();
 
     let server_addr = SocketAddr::new(DEFAULT_HOST, options.port);
-    let mut socket = Socket::bind(server_addr).expect("could not create socket");
+    let mut socket = ServerSocket::bind(server_addr).expect("could not create socket");
 
     let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
     let mut previous_instant = Instant::now();
@@ -65,9 +43,9 @@ fn main() {
     // either 0 or 1 for a 2-player game).
     let mut game: Option<(Vec<SocketAddr>, Vec<Grid>)> = None;
 
-    // Connections holds a list of clients connected, and when there
-    // are at least 2 clients connected it will start the game.
-    let mut connections: HashMap<SocketAddr, Connection> = HashMap::new();
+    // Holds a list of clients connected, and when there are at least
+    // 2 clients connected it will start the game.
+    let mut connected_clients: HashSet<SocketAddr> = HashSet::new();
 
     'running: loop {
         let current_instant = Instant::now();
@@ -111,8 +89,12 @@ fn main() {
                 None => {
                     let players_per_game = options.players_per_game as usize;
 
-                    if connections.len() >= players_per_game {
-                        let clients = connections.keys().cloned().take(players_per_game).collect();
+                    if connected_clients.len() >= players_per_game {
+                        let clients = connected_clients
+                            .iter()
+                            .cloned()
+                            .take(players_per_game)
+                            .collect();
                         let mut grids = Vec::with_capacity(players_per_game);
                         for _ in 0..players_per_game {
                             grids.push(Grid::new(GRID_HEIGHT, GRID_WIDTH));
@@ -126,81 +108,47 @@ fn main() {
             previous_instant += tick_duration;
         }
 
-        match socket.receive::<ClientMessage>() {
-            Ok(Some((source_addr, ClientMessage::Connect))) => {
-                match connections.entry(source_addr) {
-                    Vacant(entry) => {
-                        let client = Connection::new(source_addr);
-                        let salt = client.salt;
-                        entry.insert(client);
-                        socket
-                            .send(source_addr, &ServerMessage::Challenge { salt })
-                            .unwrap();
-                    }
-                    Occupied(entry) => {
-                        socket
-                            .send(
-                                source_addr,
-                                &ServerMessage::Challenge {
-                                    salt: entry.get().salt,
-                                },
-                            )
-                            .unwrap();
-                    }
-                }
+        match socket.receive() {
+            Ok(Some(ServerEvent::ClientConnected(addr))) => {
+                connected_clients.insert(addr);
             }
-            Ok(Some((source_addr, ClientMessage::ChallengeResponse { salt }))) => {
-                debug!("received challenge response {}", salt);
-                match connections.entry(source_addr) {
-                    Vacant(_) => {
-                        trace!(
-                            "received incorrect challenge response, no client {} awaiting confirmation",
-                            source_addr
-                        );
-                    }
-                    Occupied(mut entry) => {
-                        if entry.get().salt == salt {
-                            entry.get_mut().challenge_confirmed = true;
-                            socket
-                                .send(source_addr, &ServerMessage::ConnectionAccepted)
-                                .unwrap();
-                        }
-                    }
-                }
-            }
-            Ok(Some((source_addr, ClientMessage::Command { player_id, event }))) => {
-                trace!("server received command {:?}", event);
-
-                // If there's an active game...
-                if let Some((ref client_addrs, ref mut grids)) = game {
-                    let player_id = player_id as usize;
-
-                    // Check the specified player_id lines up with the
-                    // source addr before taking any action
-                    if player_id < client_addrs.len() && client_addrs[player_id] == source_addr {
-                        match event {
-                            GridInputEvent::MoveLeft => {
-                                grids[player_id].move_piece_left();
-                            }
-                            GridInputEvent::MoveRight => {
-                                grids[player_id].move_piece_right();
-                            }
-                            GridInputEvent::MoveDown => {
-                                grids[player_id].move_piece_down();
-                            }
-                            GridInputEvent::ForceToBottom => {
-                                grids[player_id].move_piece_to_bottom();
-                            }
-                            GridInputEvent::Rotate => {
-                                grids[player_id].rotate();
-                            }
-                        }
-                    }
-                }
-            }
-            Ok(Some((source_addr, ClientMessage::Disconnect))) => {
-                trace!("client {} requested to disconnect", source_addr);
+            Ok(Some(ServerEvent::ClientDisconnected(_addr))) => {
                 break 'running;
+            }
+            Ok(Some(ServerEvent::GameEvent(addr, message))) => {
+                match message {
+                    ClientMessage::Command { player_id, event } => {
+                        trace!("server received command {:?}", event);
+
+                        // If there's an active game...
+                        if let Some((ref client_addrs, ref mut grids)) = game {
+                            let player_id = player_id as usize;
+
+                            // Check the specified player_id lines up with the
+                            // source addr before taking any action
+                            if player_id < client_addrs.len() && client_addrs[player_id] == addr {
+                                match event {
+                                    GridInputEvent::MoveLeft => {
+                                        grids[player_id].move_piece_left();
+                                    }
+                                    GridInputEvent::MoveRight => {
+                                        grids[player_id].move_piece_right();
+                                    }
+                                    GridInputEvent::MoveDown => {
+                                        grids[player_id].move_piece_down();
+                                    }
+                                    GridInputEvent::ForceToBottom => {
+                                        grids[player_id].move_piece_to_bottom();
+                                    }
+                                    GridInputEvent::Rotate => {
+                                        grids[player_id].rotate();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
             }
             Ok(None) => {}
             Err(e) => {
