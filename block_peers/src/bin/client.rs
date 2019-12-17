@@ -13,6 +13,7 @@ use sdl2::keyboard::Keycode;
 // Std
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 // Internal
@@ -55,7 +56,12 @@ pub fn main() {
     }
 
     let window = window_builder.build().unwrap();
-    let mut renderer = Renderer::new(window.into_canvas().present_vsync().build().unwrap(), &ttf);
+    let mut renderer = Renderer::new(
+        window.into_canvas().present_vsync().build().unwrap(),
+        Path::new("assets/textures.png"),
+        Path::new("assets/VT323-Regular.ttf"),
+        &ttf,
+    );
 
     // Input
     let mut event_pump = sdl_context.event_pump().unwrap();

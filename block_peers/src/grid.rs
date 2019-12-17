@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 use crate::brick::{
     Brick, BrickIterator, BrickType, GridCell, LineIterator, MatchingLine, CELL_SIZE,
 };
+use crate::image::Image;
 use crate::piece::{random_next_piece, Piece};
-use crate::render::{Image, Opacity, Renderer};
+use crate::render::{Opacity, Renderer};
 use crate::scene::GameSoundEvent;
 use crate::text::Text;
 

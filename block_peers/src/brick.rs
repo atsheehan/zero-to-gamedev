@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::From;
 use std::ops::Add;
 
-use crate::render::Image;
+use crate::image::Image;
 
 // --------
 // GridCell

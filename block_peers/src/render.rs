@@ -3,14 +3,12 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::{Texture, WindowCanvas};
 use sdl2::ttf::{Font, Sdl2TtfContext};
-use serde::{Deserialize, Serialize};
 
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
 
-use crate::brick::BrickType;
 use crate::text::Text;
 
 // These constants define the logical size of the screen: whenever
@@ -21,61 +19,8 @@ use crate::text::Text;
 pub const VIEWPORT_WIDTH: u32 = 800;
 pub const VIEWPORT_HEIGHT: u32 = 600;
 
-/// Which image to render when calling `render_image`. This module
-/// maps the image to the appropriate location in the larger texture.
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
-pub enum Image {
-    RedBrick,
-    GreenBrick,
-    BlueBrick,
-    YellowBrick,
-    OrangeBrick,
-    PurpleBrick,
-    TealBrick,
-    SmokeBrick(u16),
-    Title,
-    PlayingField,
-}
-
-impl Image {
-    fn source_rect(self) -> Rect {
-        match self {
-            Self::PlayingField => Rect::new(0, 0, 800, 600),
-            Self::Title => Rect::new(0, 64, 440, 65),
-            Self::RedBrick => Rect::new(0, 0, 32, 32),
-            Self::GreenBrick => Rect::new(32, 0, 32, 32),
-            Self::BlueBrick => Rect::new(64, 0, 32, 32),
-            Self::YellowBrick => Rect::new(96, 0, 32, 32),
-            Self::OrangeBrick => Rect::new(128, 0, 32, 32),
-            Self::PurpleBrick => Rect::new(160, 0, 32, 32),
-            Self::TealBrick => Rect::new(192, 0, 32, 32),
-            Self::SmokeBrick(frame) => {
-                if frame > 12 {
-                    panic!("unavailable smoke brick, greatest index is 12")
-                }
-                Rect::new((frame * 32) as i32, 32, 32, 32)
-            }
-        }
-    }
-
-    pub fn max_smoke_frame() -> u16 {
-        12
-    }
-
-    pub fn from_brick_type(brick_type: BrickType) -> Self {
-        use BrickType::*;
-        match brick_type {
-            Red => Image::RedBrick,
-            Green => Image::GreenBrick,
-            Blue => Image::BlueBrick,
-            Yellow => Image::YellowBrick,
-            Orange => Image::OrangeBrick,
-            Purple => Image::PurpleBrick,
-            Teal => Image::TealBrick,
-            Smoke(frame) => Image::SmokeBrick(frame),
-            Attacked => Image::SmokeBrick(0),
-        }
-    }
+pub trait Frame {
+    fn source_rect(self) -> Rect;
 }
 
 /// Used to specify how opaque an image should be rendered.
@@ -115,39 +60,36 @@ pub enum Position {
 
 pub struct Renderer<'ttf> {
     canvas: WindowCanvas,
-    background: Texture,
-    pieces: Texture,
+    textures: Texture,
     string_textures: HashMap<u64, Texture>,
     font: Font<'ttf, 'static>,
     x_offset: i32,
     y_offset: i32,
 }
 
+const DEFAULT_FONT_SIZE: u16 = 20;
+
 impl<'ttf> Renderer<'ttf> {
-    pub fn new(mut canvas: WindowCanvas, ttf_context: &'ttf Sdl2TtfContext) -> Self {
+    pub fn new(
+        mut canvas: WindowCanvas,
+        textures_file: &Path,
+        font_file: &Path,
+        ttf_context: &'ttf Sdl2TtfContext,
+    ) -> Self {
         canvas
             .set_logical_size(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)
             .unwrap();
 
         let texture_creator = canvas.texture_creator();
-        let pieces = texture_creator
-            .load_texture(Path::new("assets/tiles.png"))
-            .unwrap();
+        let textures = texture_creator.load_texture(textures_file).unwrap();
 
-        let background = texture_creator
-            .load_texture(Path::new("assets/background.png"))
-            .unwrap();
-
-        let font = ttf_context
-            .load_font(Path::new("assets/VT323-Regular.ttf"), 20)
-            .unwrap();
+        let font = ttf_context.load_font(font_file, DEFAULT_FONT_SIZE).unwrap();
 
         let string_textures = HashMap::new();
 
         Self {
             canvas,
-            pieces,
-            background,
+            textures,
             string_textures,
             font,
             x_offset: 0,
@@ -187,25 +129,17 @@ impl<'ttf> Renderer<'ttf> {
     }
 
     // TODO: update function to use Position / Dimensions similar to render_text
-    pub fn render_image<R>(&mut self, image: Image, dest_rect: R, opacity: Opacity)
+    pub fn render_image<R, F>(&mut self, frame: F, dest_rect: R, opacity: Opacity)
     where
         R: Into<Rect>,
+        F: Frame,
     {
         let dest_rect = translate(dest_rect.into(), self.x_offset, self.y_offset);
 
-        match image {
-            Image::PlayingField => {
-                self.canvas
-                    .copy(&self.background, image.source_rect(), dest_rect)
-                    .expect("failed to render image");
-            }
-            _ => {
-                self.pieces.set_alpha_mod(opacity.alpha());
-                self.canvas
-                    .copy(&self.pieces, image.source_rect(), dest_rect)
-                    .expect("failed to render image");
-            }
-        }
+        self.textures.set_alpha_mod(opacity.alpha());
+        self.canvas
+            .copy(&self.textures, frame.source_rect(), dest_rect)
+            .expect("failed to render image");
     }
 
     pub fn render_text(&mut self, text: Text) {
@@ -276,21 +210,4 @@ fn translate(rect: Rect, x_offset: i32, y_offset: i32) -> Rect {
         rect.width(),
         rect.height(),
     )
-}
-
-// --------
-// Tests
-// --------
-
-#[test]
-#[should_panic]
-fn test_invalid_smoke_brick() {
-    Image::SmokeBrick(13).source_rect();
-}
-
-#[test]
-fn test_valid_smoke_brick() {
-    for i in 0..12 {
-        Image::SmokeBrick(i as u16).source_rect();
-    }
 }
