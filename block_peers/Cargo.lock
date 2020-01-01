@@ -45,6 +45,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "bananas"
+version = "0.1.0"
+
+[[package]]
 name = "base64"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -81,6 +85,7 @@ dependencies = [
 name = "block_peers"
 version = "0.1.0"
 dependencies = [
+ "bananas 0.1.0",
  "bincode 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "getopts 0.2.21 (registry+https://github.com/rust-lang/crates.io-index)",
