@@ -2,7 +2,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::brick::{BrickType, GridCell};
-use crate::render::Image;
+use crate::image::Image;
 
 // --------
 // Piece

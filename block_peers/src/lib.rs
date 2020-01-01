@@ -8,6 +8,7 @@ pub mod ai;
 pub mod brick;
 pub mod codec;
 pub mod grid;
+pub mod image;
 pub mod logging;
 pub mod net;
 pub mod piece;
