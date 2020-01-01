@@ -12,8 +12,6 @@ pub mod image;
 pub mod logging;
 pub mod net;
 pub mod piece;
-pub mod render;
 pub mod scene;
 pub mod scenes;
 pub mod sound;
-pub mod text;

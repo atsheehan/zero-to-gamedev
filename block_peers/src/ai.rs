@@ -1,7 +1,7 @@
 use rand::Rng;
 
 use crate::grid::Grid;
-use crate::render::Renderer;
+use bananas::render::Renderer;
 
 /// DumbAI has no strategy for winning it will just randomly move pieces around
 /// the board.

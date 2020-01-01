@@ -3,9 +3,9 @@ use sdl2::event::Event;
 use std::net::SocketAddr;
 
 use crate::net::{ClientMessage, ServerMessage, Socket};
-use crate::render::Renderer;
+use bananas::render::Renderer;
 use crate::scene::{AppLifecycleEvent, GameSoundEvent, Scene};
-use crate::text::Text;
+use bananas::text::Text;
 
 pub struct GameOverScene {
     address: SocketAddr,

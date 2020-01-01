@@ -8,7 +8,7 @@ use crate::brick::CELL_SIZE;
 use crate::grid::{Grid, GridInputEvent};
 use crate::image::Image;
 use crate::net::{ClientMessage, ServerMessage, Socket};
-use crate::render::{Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
+use bananas::render::{Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::{AppLifecycleEvent, GameSoundEvent, Scene};
 use crate::scenes::GameOverScene;
 

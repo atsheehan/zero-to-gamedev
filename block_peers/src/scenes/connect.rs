@@ -2,10 +2,10 @@ use sdl2::event::Event;
 use std::net::SocketAddr;
 
 use crate::net::{ClientMessage, ServerMessage, Socket};
-use crate::render::Renderer;
+use bananas::render::Renderer;
 use crate::scene::{GameSoundEvent, Scene};
 use crate::scenes::GameScene;
-use crate::text::Text;
+use bananas::text::Text;
 
 // ~10 seconds at 60 fps
 const MAX_CONNECTION_ATTEMPTS: u64 = 600;

@@ -1,5 +1,5 @@
 use crate::brick::BrickType;
-use crate::render::ImageFrame;
+use bananas::render::ImageFrame;
 use sdl2::rect::Rect;
 use serde::{Deserialize, Serialize};
 

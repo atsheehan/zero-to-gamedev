@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 // Internal
 use block_peers::logging;
 use block_peers::net::{ServerMessage, Socket};
-use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
+use bananas::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use block_peers::scene::{AppLifecycleEvent, GameSoundEvent, Scene};
 use block_peers::scenes::TitleScene;
 use block_peers::sound::{AudioManager, SoundEffect};

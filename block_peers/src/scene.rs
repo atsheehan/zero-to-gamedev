@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
 use crate::net::{ServerMessage, Socket};
-use crate::render::Renderer;
+use bananas::render::Renderer;
 
 pub enum AppLifecycleEvent {
     /// Either the user has requested to quit or some OS event has happened which wants the app to

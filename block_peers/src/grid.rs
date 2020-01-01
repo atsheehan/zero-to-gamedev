@@ -8,9 +8,9 @@ use crate::brick::{
 };
 use crate::image::Image;
 use crate::piece::{random_next_piece, Piece};
-use crate::render::{Opacity, Renderer};
+use bananas::render::{Opacity, Renderer};
 use crate::scene::GameSoundEvent;
-use crate::text::Text;
+use bananas::text::Text;
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum GridInputEvent {

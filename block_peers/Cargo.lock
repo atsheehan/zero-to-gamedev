@@ -47,6 +47,9 @@ dependencies = [
 [[package]]
 name = "bananas"
 version = "0.1.0"
+dependencies = [
+ "sdl2 0.32.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "base64"

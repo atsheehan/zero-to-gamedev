@@ -14,11 +14,11 @@ use crate::grid::Grid;
 use crate::image::Image;
 use crate::net::{ServerMessage, Socket};
 use crate::piece::Piece;
-use crate::render::{Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
+use bananas::render::{Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::{GameSoundEvent, Scene};
 use crate::scenes::ConnectScene;
 use crate::sound::SOUND_IS_ENABLED;
-use crate::text::Text;
+use bananas::text::Text;
 
 const GAME_VERSION: &str = env!("CARGO_PKG_VERSION");
 
