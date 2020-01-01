@@ -19,7 +19,7 @@ use crate::text::Text;
 pub const VIEWPORT_WIDTH: u32 = 800;
 pub const VIEWPORT_HEIGHT: u32 = 600;
 
-pub trait Frame {
+pub trait ImageFrame {
     fn source_rect(self) -> Rect;
 }
 
@@ -132,7 +132,7 @@ impl<'ttf> Renderer<'ttf> {
     pub fn render_image<R, F>(&mut self, frame: F, dest_rect: R, opacity: Opacity)
     where
         R: Into<Rect>,
-        F: Frame,
+        F: ImageFrame,
     {
         let dest_rect = translate(dest_rect.into(), self.x_offset, self.y_offset);
 

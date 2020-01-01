@@ -1,5 +1,5 @@
 use crate::brick::BrickType;
-use crate::render::Frame;
+use crate::render::ImageFrame;
 use sdl2::rect::Rect;
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +19,7 @@ pub enum Image {
     PlayingField,
 }
 
-impl Frame for Image {
+impl ImageFrame for Image {
     fn source_rect(self) -> Rect {
         match self {
             Self::PlayingField => Rect::new(0, 128, 800, 600),
