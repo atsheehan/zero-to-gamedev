@@ -128,6 +128,13 @@ impl<'ttf> Renderer<'ttf> {
         self.canvas.fill_rect(rect).expect("failed to fill rect");
     }
 
+    pub fn draw_rect(&mut self, rect: Rect, color: Color) {
+        let rect = translate(rect, self.x_offset, self.y_offset);
+
+        self.canvas.set_draw_color(color);
+        self.canvas.draw_rect(rect).expect("failed to draw rect");
+    }
+
     // TODO: update function to use Position / Dimensions similar to render_text
     pub fn render_image<R, F>(&mut self, frame: F, dest_rect: R, opacity: Opacity)
     where

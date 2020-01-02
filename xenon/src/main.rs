@@ -1,4 +1,6 @@
 use sdl2::event::Event;
+use sdl2::pixels::Color;
+use sdl2::rect::Rect as SDLRect;
 use sdl2::keyboard::Keycode;
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -24,7 +26,78 @@ trait Scene {
     }
 }
 
-struct WorldScene;
+#[derive(Copy, Clone, Debug)]
+struct Vec2D {
+    x: f32,
+    y: f32,
+}
+
+impl Vec2D {
+    fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+struct Rect {
+    left: f32,
+    top: f32,
+    width: f32,
+    height: f32,
+}
+
+impl Rect {
+    fn from_components(position: Vec2D, dimensions: Vec2D) -> Self {
+        Self {
+            left: position.x,
+            top: position.y,
+            width: dimensions.x,
+            height: dimensions.y,
+        }
+    }
+}
+
+impl Into<SDLRect> for Rect {
+    fn into(self) -> SDLRect {
+        SDLRect::new(self.left as i32, self.top as i32, self.width as u32, self.height as u32)
+    }
+}
+
+struct Entity {
+    position: Vec2D,
+    dimensions: Vec2D,
+}
+
+impl Entity {
+    fn new(position: Vec2D, dimensions: Vec2D) -> Self {
+        Self {
+            position,
+            dimensions,
+        }
+    }
+
+    fn bounds(&self) -> Rect {
+        Rect::from_components(self.position, self.dimensions)
+    }
+}
+
+struct WorldScene {
+    entities: Vec<Entity>,
+}
+
+impl WorldScene {
+    fn new() -> Self {
+        let entities = vec![
+            Entity::new(Vec2D::new(0.0, 0.0), Vec2D::new(10.0, 10.0)),
+            Entity::new(Vec2D::new(10.0, 0.0), Vec2D::new(10.0, 10.0)),
+            Entity::new(Vec2D::new(20.0, 0.0), Vec2D::new(10.0, 10.0)),
+        ];
+
+        Self {
+            entities,
+        }
+    }
+}
 
 impl Scene for WorldScene {
     fn lifecycle(self: Box<Self>, _event: AppLifecycleEvent) -> Box<dyn Scene> {
@@ -35,7 +108,11 @@ impl Scene for WorldScene {
         self
     }
 
-    fn render(&self, _renderer: &mut Renderer) {
+    fn render(&self, renderer: &mut Renderer) {
+        let color = Color::RGB(255, 255, 255);
+        for entity in self.entities.iter() {
+            renderer.draw_rect(entity.bounds().into(), color);
+        }
     }
 
     fn update(self: Box<Self>) -> Box<dyn Scene> {
@@ -73,7 +150,7 @@ pub fn main() {
     let mut previous_instant = Instant::now();
 
     // Scene
-    let mut scene: Box<dyn Scene> = Box::new(WorldScene {});
+    let mut scene: Box<dyn Scene> = Box::new(WorldScene::new());
 
     'running: loop {
         // Input
