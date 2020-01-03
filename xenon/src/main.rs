@@ -1,10 +1,12 @@
+mod math;
+
 use sdl2::event::Event;
 use sdl2::pixels::Color;
-use sdl2::rect::Rect as SDLRect;
 use sdl2::keyboard::Keycode;
 use std::path::Path;
 use std::time::{Duration, Instant};
 use bananas::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
+use math::{Vec2D, Rect};
 
 const WINDOW_WIDTH: u32 = VIEWPORT_WIDTH;
 const WINDOW_HEIGHT: u32 = VIEWPORT_HEIGHT;
@@ -23,43 +25,6 @@ trait Scene {
     fn update(self: Box<Self>) -> Box<dyn Scene>;
     fn should_quit(&self) -> bool {
         false
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-struct Vec2D {
-    x: f32,
-    y: f32,
-}
-
-impl Vec2D {
-    fn new(x: f32, y: f32) -> Self {
-        Self { x, y }
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-struct Rect {
-    left: f32,
-    top: f32,
-    width: f32,
-    height: f32,
-}
-
-impl Rect {
-    fn from_components(position: Vec2D, dimensions: Vec2D) -> Self {
-        Self {
-            left: position.x,
-            top: position.y,
-            width: dimensions.x,
-            height: dimensions.y,
-        }
-    }
-}
-
-impl Into<SDLRect> for Rect {
-    fn into(self) -> SDLRect {
-        SDLRect::new(self.left as i32, self.top as i32, self.width as u32, self.height as u32)
     }
 }
 
