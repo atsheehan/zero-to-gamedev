@@ -129,7 +129,29 @@ impl Scene for WorldScene {
 }
 
 fn move_until_collision(initial_bounds: Rect, new_bounds: Rect, obstacle: Rect) -> Rect {
-    initial_bounds
+    let vel = new_bounds.position() - initial_bounds.position();
+    let vel_x = vel.x_vec();
+    let vel_y = vel.y_vec();
+
+    let mut new_bounds = initial_bounds.translate(vel_x);
+    if obstacle.overlaps(new_bounds) {
+        if vel_x.x > 0.0 {
+            new_bounds = new_bounds.set_right(obstacle.left());
+        } else {
+            new_bounds = new_bounds.set_left(obstacle.right());
+        }
+    }
+
+    new_bounds = new_bounds.translate(vel_y);
+    if obstacle.overlaps(new_bounds) {
+        if vel_y.y > 0.0 {
+            new_bounds = new_bounds.set_bottom(obstacle.top());
+        } else {
+            new_bounds = new_bounds.set_top(obstacle.bottom());
+        }
+    }
+
+    new_bounds
 }
 
 pub fn main() {

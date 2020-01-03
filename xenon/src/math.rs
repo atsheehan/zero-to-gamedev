@@ -4,8 +4,8 @@ use sdl2::rect::Rect as SDLRect;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vec2D {
-    x: f32,
-    y: f32,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Vec2D {
@@ -24,6 +24,20 @@ impl Vec2D {
 
     pub fn magnitude(self) -> f32 {
         (self.x * self.x + self.y * self.y).sqrt()
+    }
+
+    pub fn y_vec(self) -> Self {
+        Self {
+            x: 0.0,
+            y: self.y,
+        }
+    }
+
+    pub fn x_vec(self) -> Self {
+        Self {
+            x: self.x,
+            y: 0.0,
+        }
     }
 }
 
@@ -107,20 +121,56 @@ impl Rect {
             self.bottom() > other.top()
     }
 
-    fn left(&self) -> f32 {
+    pub fn left(&self) -> f32 {
         self.left
     }
 
-    fn right(&self) -> f32 {
+    pub fn right(&self) -> f32 {
         self.left + self.width
     }
 
-    fn top(&self) -> f32 {
+    pub fn top(&self) -> f32 {
         self.top
     }
 
-    fn bottom(&self) -> f32 {
+    pub fn bottom(&self) -> f32 {
         self.top + self.height
+    }
+
+    pub fn set_left(self, left: f32) -> Self {
+        Self {
+            left,
+            top: self.top,
+            width: self.width,
+            height: self.height,
+        }
+    }
+
+    pub fn set_right(self, right: f32) -> Self {
+        Self {
+            left: right - self.width,
+            top: self.top,
+            width: self.width,
+            height: self.height,
+        }
+    }
+
+    pub fn set_top(self, top: f32) -> Self {
+        Self {
+            left: self.left,
+            top: top,
+            width: self.width,
+            height: self.height,
+        }
+    }
+
+    pub fn set_bottom(self, bottom: f32) -> Self {
+        Self {
+            left: self.left,
+            top: bottom - self.height,
+            width: self.width,
+            height: self.height,
+        }
     }
 }
 
