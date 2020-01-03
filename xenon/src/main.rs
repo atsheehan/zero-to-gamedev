@@ -100,26 +100,21 @@ impl Scene for WorldScene {
                 let entity = &self.entities[i];
 
                 let vel = (self.target - entity.bounds().center()).normalize();
-                let new_bounds = entity.bounds().translate(vel);
+                let mut new_bounds = entity.bounds().translate(vel);
 
-                // let mut j = 0;
-                // while j < num_entities {
-                //     if i == j {
-                //         j += 1;
-                //         continue;
-                //     }
+                let mut j = 0;
+                while j < num_entities {
+                    if i != j {
+                        let other_entity = &self.entities[j];
 
-                //     if i != j {
-                //         let other_entity = &self.entities[j];
+                        if other_entity.bounds().overlaps(new_bounds) {
+                            new_bounds = entity.bounds();
+                            break;
+                        }
+                    }
 
-                //         if other_entity.bounds().overlaps(new_bounds) {
-                //             j = 0;
-                //             continue;
-                //         }
-                //     }
-
-                //     j += 1;
-                // }
+                    j += 1;
+                }
 
                 new_bounds.position()
             };
