@@ -98,9 +98,10 @@ impl Scene for WorldScene {
         for i in 0..num_entities {
             let new_position = {
                 let entity = &self.entities[i];
+                let initial_bounds = entity.bounds();
 
-                let vel = (self.target - entity.bounds().center()).normalize();
-                let mut new_bounds = entity.bounds().translate(vel);
+                let vel = (self.target - initial_bounds.center()).normalize();
+                let mut new_bounds = initial_bounds.translate(vel);
 
                 let mut j = 0;
                 while j < num_entities {
@@ -108,8 +109,9 @@ impl Scene for WorldScene {
                         let other_entity = &self.entities[j];
 
                         if other_entity.bounds().overlaps(new_bounds) {
-                            new_bounds = entity.bounds();
-                            break;
+                            new_bounds = move_until_collision(initial_bounds, new_bounds, other_entity.bounds());
+                            j = 0;
+                            continue;
                         }
                     }
 
@@ -124,6 +126,10 @@ impl Scene for WorldScene {
 
         self
     }
+}
+
+fn move_until_collision(initial_bounds: Rect, new_bounds: Rect, obstacle: Rect) -> Rect {
+    initial_bounds
 }
 
 pub fn main() {
