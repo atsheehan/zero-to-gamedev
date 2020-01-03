@@ -47,6 +47,7 @@ impl Entity {
 }
 
 struct WorldScene {
+    target: Vec2D,
     entities: Vec<Entity>,
 }
 
@@ -58,8 +59,11 @@ impl WorldScene {
             Entity::new(Vec2D::new(20.0, 0.0), Vec2D::new(10.0, 10.0)),
         ];
 
+        let target = Vec2D::new(200.0, 200.0);
+
         Self {
             entities,
+            target,
         }
     }
 }
@@ -69,7 +73,15 @@ impl Scene for WorldScene {
         self
     }
 
-    fn input(self: Box<Self>, _event: Event) -> Box<dyn Scene> {
+    fn input(mut self: Box<Self>, event: Event) -> Box<dyn Scene> {
+        match event {
+            Event::MouseButtonDown { x, y, .. } => {
+                self.target = Vec2D::new(x as f32, y as f32);
+            },
+            _ => {},
+        }
+
+
         self
     }
 
@@ -84,9 +96,35 @@ impl Scene for WorldScene {
         let num_entities = self.entities.len();
 
         for i in 0..num_entities {
-            let entity = &mut self.entities[i];
-            let vel = Vec2D::new(0.5, 0.5);
-            entity.position += vel;
+            let new_position = {
+                let entity = &self.entities[i];
+
+                let vel = (self.target - entity.bounds().center()).normalize();
+                let new_bounds = entity.bounds().translate(vel);
+
+                // let mut j = 0;
+                // while j < num_entities {
+                //     if i == j {
+                //         j += 1;
+                //         continue;
+                //     }
+
+                //     if i != j {
+                //         let other_entity = &self.entities[j];
+
+                //         if other_entity.bounds().overlaps(new_bounds) {
+                //             j = 0;
+                //             continue;
+                //         }
+                //     }
+
+                //     j += 1;
+                // }
+
+                new_bounds.position()
+            };
+
+            self.entities[i].position = new_position;
         }
 
         self
