@@ -1,3 +1,5 @@
+use std::ops::{Add, AddAssign};
+
 use sdl2::rect::Rect as SDLRect;
 
 #[derive(Copy, Clone, Debug)]
@@ -9,6 +11,26 @@ pub struct Vec2D {
 impl Vec2D {
     pub fn new(x: f32, y: f32) -> Self {
         Self { x, y }
+    }
+}
+
+impl Add for Vec2D {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl AddAssign for Vec2D {
+    fn add_assign(&mut self, other: Self) {
+        *self = Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        };
     }
 }
 

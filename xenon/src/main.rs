@@ -80,7 +80,15 @@ impl Scene for WorldScene {
         }
     }
 
-    fn update(self: Box<Self>) -> Box<dyn Scene> {
+    fn update(mut self: Box<Self>) -> Box<dyn Scene> {
+        let num_entities = self.entities.len();
+
+        for i in 0..num_entities {
+            let entity = &mut self.entities[i];
+            let vel = Vec2D::new(0.5, 0.5);
+            entity.position += vel;
+        }
+
         self
     }
 }
