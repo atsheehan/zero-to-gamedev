@@ -1,6 +1,8 @@
 use sdl2::event::Event;
 use std::net::SocketAddr;
 
+use async_std::task;
+
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
 use crate::scene::{GameSoundEvent, Scene};
@@ -100,16 +102,20 @@ impl Scene for ConnectScene {
         match self.state {
             ConnectionState::SendingConnectionRequest => {
                 debug!("sending connection request");
-                socket
-                    .send(self.server_addr, &ClientMessage::Connect)
-                    .unwrap();
+                task::block_on(async {
+                    socket.send(self.server_addr, &ClientMessage::Connect).await
+                })
+                .unwrap();
                 self.connection_attempt_counter += 1;
             }
             ConnectionState::SendingChallengeResponse { salt } => {
                 debug!("sending challenge response");
-                socket
-                    .send(self.server_addr, &ClientMessage::ChallengeResponse { salt })
-                    .unwrap();
+                task::block_on(async {
+                    socket
+                        .send(self.server_addr, &ClientMessage::ChallengeResponse { salt })
+                        .await
+                })
+                .unwrap();
             }
             _ => {}
         }

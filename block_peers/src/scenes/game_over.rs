@@ -1,5 +1,6 @@
 use sdl2::event::Event;
 
+use async_std::task;
 use std::net::SocketAddr;
 
 use crate::net::{ClientMessage, ServerMessage, Socket};
@@ -22,9 +23,11 @@ impl Scene for GameOverScene {
         match event {
             AppLifecycleEvent::Shutdown => {
                 trace!("sending disconnect to the server");
-                socket
-                    .send(self.address, &ClientMessage::Disconnect)
-                    .unwrap();
+
+                task::block_on(async {
+                    socket.send(self.address, &ClientMessage::Disconnect).await
+                })
+                .unwrap();
             }
         }
     }

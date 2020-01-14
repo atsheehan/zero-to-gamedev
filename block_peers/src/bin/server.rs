@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate log;
+extern crate async_std;
 extern crate bincode;
 extern crate getopts;
 
@@ -7,11 +8,14 @@ use block_peers::grid::{Grid, GridAttackEvent, GridInputEvent};
 use block_peers::logging;
 use block_peers::net::{ClientMessage, ServerEvent, ServerMessage, ServerSocket};
 
+use async_std::net::SocketAddr;
+use async_std::task;
+
 use getopts::Options;
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::env;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr};
 use std::time::{Duration, Instant};
 
 const GRID_HEIGHT: u32 = 20;
@@ -29,7 +33,8 @@ fn main() {
     let options = get_options();
 
     let server_addr = SocketAddr::new(DEFAULT_HOST, options.port);
-    let mut socket = ServerSocket::bind(server_addr).expect("could not create socket");
+    let mut socket = task::block_on(async { ServerSocket::bind(server_addr).await })
+        .expect("could not create socket");
 
     let tick_duration = Duration::from_micros(MICROSECONDS_PER_TICK);
     let mut previous_instant = Instant::now();
@@ -75,7 +80,7 @@ fn main() {
                             player_id,
                             grids: Cow::Borrowed(&grids),
                         };
-                        socket.send(addr, &message).unwrap();
+                        task::block_on(async { socket.send(addr, &message).await }).unwrap();
                     }
 
                     for grid in grids.iter_mut() {
@@ -108,7 +113,7 @@ fn main() {
             previous_instant += tick_duration;
         }
 
-        match socket.receive() {
+        match task::block_on(async { socket.receive().await }) {
             Ok(Some(ServerEvent::ClientConnected(addr))) => {
                 connected_clients.insert(addr);
             }

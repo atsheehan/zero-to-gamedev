@@ -3,11 +3,12 @@ use rand::Rng;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
+use async_std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
+
 use std::borrow::Cow;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
-use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
 
 use crate::codec::{gzip_decode, gzip_encode};
 use crate::grid::{Grid, GridInputEvent};
@@ -81,8 +82,8 @@ pub struct ServerSocket {
 }
 
 impl ServerSocket {
-    pub fn bind<A: ToSocketAddrs>(addr: A) -> Result<Self> {
-        let socket = Socket::bind(addr)?;
+    pub async fn bind<A: ToSocketAddrs>(addr: A) -> Result<Self> {
+        let socket = Socket::bind(addr).await?;
         let connections = HashMap::new();
         Ok(Self {
             socket,
@@ -90,8 +91,8 @@ impl ServerSocket {
         })
     }
 
-    pub fn receive(&mut self) -> Result<Option<ServerEvent>> {
-        match self.socket.receive::<ClientMessage>() {
+    pub async fn receive(&mut self) -> Result<Option<ServerEvent>> {
+        match self.socket.receive::<ClientMessage>().await {
             Ok(Some((source_addr, ClientMessage::Connect))) => {
                 match self.connections.entry(source_addr) {
                     Entry::Vacant(entry) => {
@@ -100,6 +101,7 @@ impl ServerSocket {
                         entry.insert(client);
                         self.socket
                             .send(source_addr, &ServerMessage::Challenge { salt })
+                            .await
                             .unwrap();
                     }
                     Entry::Occupied(entry) => {
@@ -110,6 +112,7 @@ impl ServerSocket {
                                     salt: entry.get().salt,
                                 },
                             )
+                            .await
                             .unwrap();
                     }
                 }
@@ -123,6 +126,7 @@ impl ServerSocket {
                             entry.get_mut().challenge_confirmed = true;
                             self.socket
                                 .send(source_addr, &ServerMessage::ConnectionAccepted)
+                                .await
                                 .unwrap();
                         }
                         Ok(Some(ServerEvent::ClientConnected(source_addr)))
@@ -141,8 +145,12 @@ impl ServerSocket {
         }
     }
 
-    pub fn send<A: ToSocketAddrs>(&mut self, addr: A, message: &ServerMessage) -> Result<()> {
-        self.socket.send(addr, message)
+    pub async fn send<A: ToSocketAddrs>(
+        &mut self,
+        addr: A,
+        message: &ServerMessage<'_>,
+    ) -> Result<()> {
+        self.socket.send(addr, message).await
     }
 }
 
@@ -157,21 +165,19 @@ pub struct Socket {
 
 impl Socket {
     /// Binds a new UDP socket on any avaliable port.
-    pub fn new() -> Result<Self> {
-        Self::bind("0.0.0.0:0")
+    pub async fn new() -> Result<Self> {
+        Self::bind("0.0.0.0:0").await
     }
 
     /// Binds a new UDP socket to the specific socket address.
-    pub fn bind<A: ToSocketAddrs>(addr: A) -> Result<Self> {
-        let socket = UdpSocket::bind(addr)?;
-        socket.set_nonblocking(true)?;
-
+    pub async fn bind<A: ToSocketAddrs>(addr: A) -> Result<Self> {
+        let socket = UdpSocket::bind(addr).await?;
         let buffer = [0; BUFFER_SIZE];
         Ok(Socket { socket, buffer })
     }
 
-    pub fn receive<D: DeserializeOwned>(&mut self) -> Result<Option<(SocketAddr, D)>> {
-        let (bytes_received, source_addr) = match self.socket.recv_from(&mut self.buffer) {
+    pub async fn receive<D: DeserializeOwned>(&mut self) -> Result<Option<(SocketAddr, D)>> {
+        let (bytes_received, source_addr) = match self.socket.recv_from(&mut self.buffer).await {
             Ok(result) => result,
             Err(ref e) if e.kind() == ErrorKind::WouldBlock => return Ok(None),
             Err(e) => return Err(e),
@@ -192,10 +198,14 @@ impl Socket {
         }
     }
 
-    pub fn send<A: ToSocketAddrs, S: Serialize>(&mut self, addr: A, message: S) -> Result<()> {
+    pub async fn send<A: ToSocketAddrs, S: Serialize>(
+        &mut self,
+        addr: A,
+        message: S,
+    ) -> Result<()> {
         let packet = Packet::new(message);
         let bytes = gzip_encode(&packet.as_bytes());
-        self.socket.send_to(&bytes, addr)?;
+        self.socket.send_to(&bytes, addr).await?;
         Ok(())
     }
 }

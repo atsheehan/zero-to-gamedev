@@ -16,6 +16,8 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
+use async_std::task;
+
 // Internal
 use block_peers::logging;
 use block_peers::net::{ServerMessage, Socket};
@@ -74,7 +76,8 @@ pub fn main() {
     let mut fps_timer = Instant::now();
 
     // Network
-    let mut socket = Socket::new().expect("could not open a new socket");
+    let mut socket =
+        task::block_on(async { Socket::new().await }).expect("could not open a new socket");
 
     // Scene
     let mut scene: Box<dyn Scene> = Box::new(TitleScene::new(server_addr));
@@ -91,7 +94,7 @@ pub fn main() {
     'running: loop {
         // Network
         loop {
-            match socket.receive::<ServerMessage>() {
+            match task::block_on(async { socket.receive::<ServerMessage>().await }) {
                 Ok(Some((source_addr, message))) => {
                     scene = scene.handle_message(&mut socket, source_addr, message);
                 }

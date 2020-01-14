@@ -4,6 +4,8 @@ use sdl2::rect::Rect;
 
 use std::net::SocketAddr;
 
+use async_std::task;
+
 use crate::brick::CELL_SIZE;
 use crate::grid::{Grid, GridInputEvent};
 use crate::image::Image;
@@ -33,9 +35,10 @@ impl Scene for GameScene {
         match event {
             AppLifecycleEvent::Shutdown => {
                 trace!("sending disconnect to the server");
-                socket
-                    .send(self.address, &ClientMessage::Disconnect)
-                    .unwrap();
+                task::block_on(async {
+                    socket.send(self.address, &ClientMessage::Disconnect).await
+                })
+                .unwrap();
             }
         }
     }
@@ -48,71 +51,86 @@ impl Scene for GameScene {
                 keycode: Some(Keycode::A),
                 ..
             } => {
-                socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command {
-                            player_id,
-                            event: GridInputEvent::MoveLeft,
-                        },
-                    )
-                    .unwrap();
+                task::block_on(async {
+                    socket
+                        .send(
+                            self.address,
+                            &ClientMessage::Command {
+                                player_id,
+                                event: GridInputEvent::MoveLeft,
+                            },
+                        )
+                        .await
+                })
+                .unwrap();
             }
             Event::KeyDown {
                 keycode: Some(Keycode::D),
                 ..
             } => {
-                socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command {
-                            player_id,
-                            event: GridInputEvent::MoveRight,
-                        },
-                    )
-                    .unwrap();
+                task::block_on(async {
+                    socket
+                        .send(
+                            self.address,
+                            &ClientMessage::Command {
+                                player_id,
+                                event: GridInputEvent::MoveRight,
+                            },
+                        )
+                        .await
+                })
+                .unwrap();
             }
             Event::KeyDown {
                 keycode: Some(Keycode::S),
                 ..
             } => {
-                socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command {
-                            player_id,
-                            event: GridInputEvent::MoveDown,
-                        },
-                    )
-                    .unwrap();
+                task::block_on(async {
+                    socket
+                        .send(
+                            self.address,
+                            &ClientMessage::Command {
+                                player_id,
+                                event: GridInputEvent::MoveDown,
+                            },
+                        )
+                        .await
+                })
+                .unwrap();
             }
             Event::KeyDown {
                 keycode: Some(Keycode::W),
                 ..
             } => {
-                socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command {
-                            player_id,
-                            event: GridInputEvent::ForceToBottom,
-                        },
-                    )
-                    .unwrap();
+                task::block_on(async {
+                    socket
+                        .send(
+                            self.address,
+                            &ClientMessage::Command {
+                                player_id,
+                                event: GridInputEvent::ForceToBottom,
+                            },
+                        )
+                        .await
+                })
+                .unwrap();
             }
             Event::KeyDown {
                 keycode: Some(Keycode::E),
                 ..
             } => {
-                socket
-                    .send(
-                        self.address,
-                        &ClientMessage::Command {
-                            player_id,
-                            event: GridInputEvent::Rotate,
-                        },
-                    )
-                    .unwrap();
+                task::block_on(async {
+                    socket
+                        .send(
+                            self.address,
+                            &ClientMessage::Command {
+                                player_id,
+                                event: GridInputEvent::Rotate,
+                            },
+                        )
+                        .await
+                })
+                .unwrap();
             }
             _ => {}
         }
