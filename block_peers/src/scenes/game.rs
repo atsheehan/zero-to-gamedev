@@ -3,6 +3,7 @@ use sdl2::keyboard::Keycode;
 use sdl2::rect::Rect;
 
 use std::net::SocketAddr;
+use std::sync::mpsc::Sender;
 
 use async_std::task;
 
@@ -31,106 +32,90 @@ impl GameScene {
 }
 
 impl Scene for GameScene {
-    fn lifecycle(&mut self, socket: &mut Socket, event: AppLifecycleEvent) {
+    fn lifecycle(
+        &mut self,
+        socket: &mut Sender<(SocketAddr, ClientMessage)>,
+        event: AppLifecycleEvent,
+    ) {
         match event {
             AppLifecycleEvent::Shutdown => {
                 trace!("sending disconnect to the server");
-                task::block_on(async {
-                    socket.send(self.address, &ClientMessage::Disconnect).await
-                })
-                .unwrap();
+                socket
+                    .send((self.address, ClientMessage::Disconnect))
+                    .unwrap();
             }
         }
     }
 
-    fn input(self: Box<Self>, socket: &mut Socket, event: Event) -> Box<dyn Scene> {
+    fn input(
+        self: Box<Self>,
+        socket: &mut Sender<(SocketAddr, ClientMessage)>,
+        event: Event,
+    ) -> Box<dyn Scene> {
         let player_id = self.player_id;
 
         match event {
             Event::KeyDown {
                 keycode: Some(Keycode::A),
                 ..
-            } => {
-                task::block_on(async {
-                    socket
-                        .send(
-                            self.address,
-                            &ClientMessage::Command {
-                                player_id,
-                                event: GridInputEvent::MoveLeft,
-                            },
-                        )
-                        .await
-                })
-                .unwrap();
-            }
+            } => socket
+                .send((
+                    self.address,
+                    ClientMessage::Command {
+                        player_id,
+                        event: GridInputEvent::MoveLeft,
+                    },
+                ))
+                .unwrap(),
             Event::KeyDown {
                 keycode: Some(Keycode::D),
                 ..
-            } => {
-                task::block_on(async {
-                    socket
-                        .send(
-                            self.address,
-                            &ClientMessage::Command {
-                                player_id,
-                                event: GridInputEvent::MoveRight,
-                            },
-                        )
-                        .await
-                })
-                .unwrap();
-            }
+            } => socket
+                .send((
+                    self.address,
+                    ClientMessage::Command {
+                        player_id,
+                        event: GridInputEvent::MoveRight,
+                    },
+                ))
+                .unwrap(),
             Event::KeyDown {
                 keycode: Some(Keycode::S),
                 ..
-            } => {
-                task::block_on(async {
-                    socket
-                        .send(
-                            self.address,
-                            &ClientMessage::Command {
-                                player_id,
-                                event: GridInputEvent::MoveDown,
-                            },
-                        )
-                        .await
-                })
-                .unwrap();
-            }
+            } => socket
+                .send((
+                    self.address,
+                    ClientMessage::Command {
+                        player_id,
+                        event: GridInputEvent::MoveDown,
+                    },
+                ))
+                .unwrap(),
             Event::KeyDown {
                 keycode: Some(Keycode::W),
                 ..
-            } => {
-                task::block_on(async {
-                    socket
-                        .send(
-                            self.address,
-                            &ClientMessage::Command {
-                                player_id,
-                                event: GridInputEvent::ForceToBottom,
-                            },
-                        )
-                        .await
-                })
-                .unwrap();
-            }
+            } => socket
+                .send((
+                    self.address,
+                    ClientMessage::Command {
+                        player_id,
+                        event: GridInputEvent::ForceToBottom,
+                    },
+                ))
+                .unwrap(),
             Event::KeyDown {
                 keycode: Some(Keycode::E),
                 ..
             } => {
-                task::block_on(async {
-                    socket
-                        .send(
-                            self.address,
-                            &ClientMessage::Command {
-                                player_id,
-                                event: GridInputEvent::Rotate,
-                            },
-                        )
-                        .await
-                })
-                .unwrap();
+                socket
+                    .send((
+                        self.address,
+                        ClientMessage::Command {
+                            player_id,
+                            event: GridInputEvent::Rotate,
+                        },
+                    ))
+                    .unwrap();
             }
             _ => {}
         }
@@ -153,7 +138,7 @@ impl Scene for GameScene {
 
     fn update(
         mut self: Box<Self>,
-        _socket: &mut Socket,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
         sounds: &mut Vec<GameSoundEvent>,
     ) -> Box<dyn Scene> {
         if self.grids.iter().any(|grid| grid.gameover) {
@@ -172,7 +157,7 @@ impl Scene for GameScene {
 
     fn handle_message(
         mut self: Box<Self>,
-        _socket: &mut Socket,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
         _source_addr: SocketAddr,
         message: ServerMessage,
     ) -> Box<dyn Scene> {

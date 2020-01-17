@@ -1,9 +1,10 @@
 use sdl2::event::Event;
 use std::net::SocketAddr;
+use std::sync::mpsc::Sender;
 
 use async_std::task;
 
-use crate::net::{ClientMessage, ServerMessage, Socket};
+use crate::net::{ClientMessage, ServerMessage};
 use crate::render::Renderer;
 use crate::scene::{GameSoundEvent, Scene};
 use crate::scenes::GameScene;
@@ -57,7 +58,11 @@ impl ConnectScene {
 }
 
 impl Scene for ConnectScene {
-    fn input(self: Box<Self>, _socket: &mut Socket, _event: Event) -> Box<dyn Scene> {
+    fn input(
+        self: Box<Self>,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
+        _event: Event,
+    ) -> Box<dyn Scene> {
         self
     }
 
@@ -91,7 +96,7 @@ impl Scene for ConnectScene {
 
     fn update(
         mut self: Box<Self>,
-        socket: &mut Socket,
+        socket: &mut Sender<(SocketAddr, ClientMessage)>,
         _sounds: &mut Vec<GameSoundEvent>,
     ) -> Box<dyn Scene> {
         if self.connection_attempt_counter >= MAX_CONNECTION_ATTEMPTS {
@@ -102,20 +107,16 @@ impl Scene for ConnectScene {
         match self.state {
             ConnectionState::SendingConnectionRequest => {
                 debug!("sending connection request");
-                task::block_on(async {
-                    socket.send(self.server_addr, &ClientMessage::Connect).await
-                })
-                .unwrap();
+                socket
+                    .send((self.server_addr, ClientMessage::Connect))
+                    .unwrap();
                 self.connection_attempt_counter += 1;
             }
             ConnectionState::SendingChallengeResponse { salt } => {
                 debug!("sending challenge response");
-                task::block_on(async {
-                    socket
-                        .send(self.server_addr, &ClientMessage::ChallengeResponse { salt })
-                        .await
-                })
-                .unwrap();
+                socket
+                    .send((self.server_addr, ClientMessage::ChallengeResponse { salt }))
+                    .unwrap();
             }
             _ => {}
         }
@@ -125,7 +126,7 @@ impl Scene for ConnectScene {
 
     fn handle_message(
         mut self: Box<Self>,
-        _socket: &mut Socket,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
         source_addr: SocketAddr,
         message: ServerMessage,
     ) -> Box<dyn Scene> {

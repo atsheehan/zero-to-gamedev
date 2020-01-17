@@ -14,13 +14,14 @@ use sdl2::keyboard::Keycode;
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
+use std::sync::mpsc::channel;
 use std::time::{Duration, Instant};
 
 use async_std::task;
 
 // Internal
 use block_peers::logging;
-use block_peers::net::{ServerMessage, Socket};
+use block_peers::net::{ClientMessage, ServerMessage, Socket};
 use block_peers::render::{Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use block_peers::scene::{AppLifecycleEvent, GameSoundEvent, Scene};
 use block_peers::scenes::TitleScene;
@@ -90,19 +91,34 @@ pub fn main() {
     }
     audio_manager.set_volume(0.20);
     audio_manager.play_bg_music();
+    let (tx, rx) = channel::<(SocketAddr, ServerMessage)>();
+    let (mut sx, sr) = channel::<(SocketAddr, ClientMessage)>();
+
+    task::spawn(async move {
+        loop {
+            if let Ok(Some((addr, content))) = socket.receive::<ServerMessage>().await {
+                tx.send((addr, content));
+            }
+
+            if let Ok((addr, message)) = sr.try_recv() {
+                println!("sending via socket");
+                socket.send(addr, message);
+            }
+        }
+    });
 
     'running: loop {
         // Network
         loop {
-            match task::block_on(async { socket.receive::<ServerMessage>().await }) {
-                Ok(Some((source_addr, message))) => {
-                    scene = scene.handle_message(&mut socket, source_addr, message);
+            match rx.try_recv() {
+                Ok((source_addr, message)) => {
+                    println!("received message, {:?}", source_addr);
+                    scene = scene.handle_message(&mut sx, source_addr, message);
                 }
-                Ok(None) => {
-                    break;
-                }
-                Err(_) => {
-                    error!("received unknown message");
+                Err(std::sync::mpsc::TryRecvError::Empty) => break,
+                Err(e) => {
+                    error!("received unknown message: {:?}", e);
+                    break 'running;
                 }
             }
         }
@@ -120,12 +136,12 @@ pub fn main() {
                     ..
                 } => {
                     trace!("app asked to shutdown");
-                    scene.lifecycle(&mut socket, AppLifecycleEvent::Shutdown);
+                    scene.lifecycle(&mut sx, AppLifecycleEvent::Shutdown);
                     break 'running;
                 }
 
                 event => {
-                    scene = scene.input(&mut socket, event);
+                    scene = scene.input(&mut sx, event);
                 }
             }
         }
@@ -133,7 +149,7 @@ pub fn main() {
         // Update
         let current_instant = Instant::now();
         while current_instant - previous_instant >= tick_duration {
-            scene = scene.update(&mut socket, &mut sound_events);
+            scene = scene.update(&mut sx, &mut sound_events);
             previous_instant += tick_duration;
             ups += 1;
         }

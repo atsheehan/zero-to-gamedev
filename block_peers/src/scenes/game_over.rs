@@ -2,6 +2,7 @@ use sdl2::event::Event;
 
 use async_std::task;
 use std::net::SocketAddr;
+use std::sync::mpsc::Sender;
 
 use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::render::Renderer;
@@ -19,20 +20,26 @@ impl GameOverScene {
 }
 
 impl Scene for GameOverScene {
-    fn lifecycle(&mut self, socket: &mut Socket, event: AppLifecycleEvent) {
+    fn lifecycle(
+        &mut self,
+        socket: &mut Sender<(SocketAddr, ClientMessage)>,
+        event: AppLifecycleEvent,
+    ) {
         match event {
             AppLifecycleEvent::Shutdown => {
                 trace!("sending disconnect to the server");
-
-                task::block_on(async {
-                    socket.send(self.address, &ClientMessage::Disconnect).await
-                })
-                .unwrap();
+                socket
+                    .send((self.address, ClientMessage::Disconnect))
+                    .unwrap();
             }
         }
     }
 
-    fn input(self: Box<Self>, _socket: &mut Socket, _event: Event) -> Box<dyn Scene> {
+    fn input(
+        self: Box<Self>,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
+        _event: Event,
+    ) -> Box<dyn Scene> {
         self
     }
 
@@ -47,7 +54,7 @@ impl Scene for GameOverScene {
 
     fn handle_message(
         self: Box<Self>,
-        _socket: &mut Socket,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
         _source_addr: SocketAddr,
         _message: ServerMessage,
     ) -> Box<dyn Scene> {
@@ -56,7 +63,7 @@ impl Scene for GameOverScene {
 
     fn update(
         self: Box<Self>,
-        _socket: &mut Socket,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
         _sounds: &mut Vec<GameSoundEvent>,
     ) -> Box<dyn Scene> {
         self

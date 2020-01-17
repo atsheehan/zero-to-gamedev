@@ -6,13 +6,14 @@ use sdl2::rect::Rect;
 use std::net::SocketAddr;
 use std::slice::Iter;
 use std::sync::atomic::Ordering;
+use std::sync::mpsc::Sender;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::ai::DumbAI;
 use crate::brick::CELL_SIZE;
 use crate::grid::Grid;
 use crate::image::Image;
-use crate::net::{ServerMessage, Socket};
+use crate::net::{ClientMessage, ServerMessage, Socket};
 use crate::piece::Piece;
 use crate::render::{Opacity, Renderer, VIEWPORT_HEIGHT, VIEWPORT_WIDTH};
 use crate::scene::{GameSoundEvent, Scene};
@@ -57,7 +58,11 @@ impl TitleScene {
 }
 
 impl Scene for TitleScene {
-    fn input(mut self: Box<Self>, _socket: &mut Socket, event: Event) -> Box<dyn Scene> {
+    fn input(
+        mut self: Box<Self>,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
+        event: Event,
+    ) -> Box<dyn Scene> {
         match event {
             Event::KeyDown {
                 keycode: Some(Keycode::Return),
@@ -191,7 +196,7 @@ impl Scene for TitleScene {
 
     fn handle_message(
         self: Box<Self>,
-        _socket: &mut Socket,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
         _source_addr: SocketAddr,
         _message: ServerMessage,
     ) -> Box<dyn Scene> {
@@ -200,7 +205,7 @@ impl Scene for TitleScene {
 
     fn update(
         mut self: Box<Self>,
-        _socket: &mut Socket,
+        _socket: &mut Sender<(SocketAddr, ClientMessage)>,
         sounds: &mut Vec<GameSoundEvent>,
     ) -> Box<dyn Scene> {
         self.ai.update();
